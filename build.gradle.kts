@@ -16,7 +16,7 @@ repositories {
 dependencies {
     implementation("io.ktor:ktor-server-core:3.5.1")
     implementation("io.ktor:ktor-server-netty:3.5.1")
-    implementation("io.lettuce:lettuce-core:7.6.0-RELEASE")
+    implementation("io.lettuce:lettuce-core:7.6.0.RELEASE")
     implementation("io.ktor:ktor-server-metrics-micrometer:3.5.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 

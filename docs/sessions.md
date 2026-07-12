@@ -15,12 +15,12 @@ Target: 2-3 sessions per week, ~1 hour each. Ship when it's done, not before it'
 - [x] First commit: empty project that compiles and runs detekt clean
 
 ### Session 2 — Domain model
-- [ ] Sealed interface `RateLimitResult` → `Allowed`, `Denied`, `Error`
-- [ ] Data classes for `Policy` (limit, window, algorithm, fail-open/closed)
-- [ ] Data class for `RateLimitRequest` (key, policy ID)
-- [ ] Data class for `RateLimitResponse` (result, remaining, retry-after, reset-at)
-- [ ] Unit tests: construction, validation, edge cases
-- [ ] ADR 001: Algorithm choice (all four, fixed window first — simplest proves the interface)
+- [x] Sealed interface `RateLimitResult` → `Allowed`, `Denied`, `Error`
+- [x] Data classes for `Policy` (limit, window, algorithm, fail-open/closed)
+- [x] Data class for `RateLimitRequest` (key, policy ID)
+- [x] Data class for `RateLimitResponse` (result, remaining, retry-after, reset-at)
+- [x] Unit tests: construction, validation, edge cases
+- [x] ADR 001: Algorithm choice (all four, fixed window first — simplest proves the interface)
 
 ### Session 3 — Counter store interface + in-memory implementation
 - [ ] `CounterStore` interface: `increment(key, limit, window) → CounterResult`
