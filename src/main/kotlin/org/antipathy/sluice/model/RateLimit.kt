@@ -8,13 +8,12 @@ sealed interface RateLimitResponse
 /** Carries remaining budget so callers can make proactive decisions before hitting the limit. */
 data class Allowed(
   val remaining: UInt,
-  val resetAt: Duration,
+  val resetIn: Duration,
 ): RateLimitResponse
 
 /** Carries retry timing so callers know when to come back without guessing. */
 data class Denied(
   val retryAfter: Duration,
-  val resetAt: Duration,
 ): RateLimitResponse
 
 /** Represents internal errors so they're part of the type system, not thrown exceptions. */

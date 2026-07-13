@@ -23,10 +23,10 @@ Target: 2-3 sessions per week, ~1 hour each. Ship when it's done, not before it'
 - [x] ADR 001: Algorithm choice (all four, fixed window first — simplest proves the interface)
 
 ### Session 3 — Counter store interface + in-memory implementation
-- [ ] `CounterStore` interface: `increment(key, limit, window) → CounterResult`
-- [ ] In-memory implementation (ConcurrentHashMap, for testing)
-- [ ] Unit tests: basic increment, window expiry, at-limit behaviour
-- [ ] Tests for concurrent access (coroutines hammering the same key)
+- [x] `CounterStore` interface: `increment(key, limit, window) → CounterResult`
+- [x] In-memory implementation (ConcurrentHashMap, for testing)
+- [x] Unit tests: basic increment, window expiry, at-limit behaviour
+- [x] Tests for concurrent access (coroutines hammering the same key)
 
 ### Session 4 — Redis counter store: fixed window (Lua script)
 - [ ] Lua script for atomic fixed window (increment + TTL in one call)

@@ -143,9 +143,9 @@ This project is for learning. AI (Kiro, Copilot, whatever) does not write the co
 - **Do not write code for me.** Not functions, not tests, not "here's a starting point."
 - If I ask "how do I do X?" — explain the approach, show the relevant API signature, link the docs. I type it.
 - If I paste code and ask "is this right?" — review it, critique it, suggest improvements. Don't rewrite it.
-- Scaffolding (build config, CI YAML, Dockerfile, Helm) is an exception — that's plumbing, not learning.
+- Scaffolding (build config, CI YAML) is an exception — that's plumbing, not learning.
 
-The point is that I can explain every line in an interview because I wrote every line.
+The point is that I can explain every line because I wrote every line.
 
 ---
 
