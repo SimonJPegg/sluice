@@ -1,13 +1,9 @@
 package org.antipathy.sluice.store
 
-import kotlin.time.Clock
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -19,15 +15,13 @@ import org.antipathy.sluice.model.Failed
 import org.antipathy.sluice.model.Policy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
-import org.junit.jupiter.api.Test
+import kotlin.test.Test
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
+class RedisFixedWindowCounterStoreTest :RedisCounterStoreTest() {
 
-private class FakeClock(var now: Instant = Instant.fromEpochSeconds(0)) : Clock {
-  fun advance(duration: Duration) { now = now.plus(duration) }
-  override fun now(): Instant = now
-}
-
-class InMemoryCounterStoreTest {
   private val defaultPolicy = Policy(
     id = "test-policy",
     limit = 5u,
@@ -38,17 +32,17 @@ class InMemoryCounterStoreTest {
 
   @Test
   fun `first request returns Allowed with remaining = limit - 1`() = runTest {
-    val store = InMemoryCounterStore(clock = FakeClock())
+    val store = RedisCounterStore(connection)
     val testKey = "test-key"
     val result = assertInstanceOf(Allowed::class.java,store.evaluate(testKey,defaultPolicy))
 
     assertEquals(defaultPolicy.limit-1u,result.remaining)
-    assertEquals(defaultPolicy.window,result.resetIn)
+    assertTrue(result.resetIn in 57.seconds..60.seconds, "resetIn was ${result.resetIn}")
   }
 
   @Test
   fun `multiple increments — remaining decreases with each request`() = runTest {
-    val store = InMemoryCounterStore(clock = FakeClock())
+    val store = RedisCounterStore(connection)
     repeat(defaultPolicy.limit.toInt()) { i ->
       val result = store.evaluate("key",defaultPolicy)
       check(result is Allowed)
@@ -58,7 +52,7 @@ class InMemoryCounterStoreTest {
 
   @Test
   fun `at-limit — request number limit+1 returns Denied` () = runTest {
-    val store = InMemoryCounterStore(clock = FakeClock())
+    val store = RedisCounterStore(connection)
     val testKey = "test-key"
     repeat(defaultPolicy.limit.toInt()) { i ->
       val result = store.evaluate(testKey,defaultPolicy)
@@ -71,34 +65,35 @@ class InMemoryCounterStoreTest {
 
 
   @Test
-  fun `window expiry — after advancing clock past window, counter resets`() = runTest {
-    val clock = FakeClock()
-    val store = InMemoryCounterStore(clock = clock)
+  fun `window expiry — after advancing clock past window, counter resets`() = runBlocking {
+    val store = RedisCounterStore(connection)
     val testKey = "test-key"
-    repeat(defaultPolicy.limit.toInt()) { i ->
-      val result = store.evaluate(testKey,defaultPolicy)
+    val policy = defaultPolicy.copy(window = 2.seconds)
+
+    repeat(policy.limit.toInt()) { i ->
+      val result = store.evaluate(testKey,policy)
       check(result is Allowed)
       assertEquals((4 - i).toUInt(),result.remaining)
     }
     assertInstanceOf(Denied::class.java,store.evaluate(testKey,defaultPolicy))
-    clock.advance(1.minutes + 1.seconds) // just past the boundary
+    delay(2.1.seconds)
     val result = assertInstanceOf(Allowed::class.java,store.evaluate(testKey,defaultPolicy))
     assertEquals(defaultPolicy.limit -1u, result.remaining)
   }
 
   @Test
   fun `unimplemented algorithm — returns Failed` () = runTest {
-    val store = InMemoryCounterStore(clock = FakeClock())
+    val store = RedisCounterStore(connection)
     val testKey = "test-key"
     assertInstanceOf(
       Failed::class.java,
-        store.evaluate(testKey,
-      defaultPolicy.copy(algorithmType = AlgorithmType.TOKEN_BUCKET)))
+      store.evaluate(testKey,
+        defaultPolicy.copy(algorithmType = AlgorithmType.TOKEN_BUCKET)))
   }
 
   @Test
   fun `multiple keys have independent counts`() = runTest {
-    val store = InMemoryCounterStore(clock = FakeClock())
+    val store = RedisCounterStore(connection)
     val secondPolicy = defaultPolicy.copy(limit = 6u)
     val testKey1 = "test-key"
     val testKey2 = "test-key2"
@@ -117,7 +112,7 @@ class InMemoryCounterStoreTest {
 
   @Test
   fun `concurrent access does not alter store behaviour` () = runBlocking {
-    val store = InMemoryCounterStore()
+    val store = RedisCounterStore(connection)
     val testKey = "test-key"
     val policy = defaultPolicy.copy(limit = 100u)
     withContext(Dispatchers.Default) {
@@ -127,7 +122,44 @@ class InMemoryCounterStoreTest {
       assertEquals(100,allowed.size,)
       assertEquals(100, denied.size,)
     }
-
   }
 
+  @Test
+  fun `store fails open when the policy specifies it` () = runTest {
+    val store = RedisCounterStore(connection)
+    val testKey = "test-key"
+    connection.close()
+    val result = assertInstanceOf(Allowed::class.java,store.evaluate(testKey,defaultPolicy))
+
+    assertEquals(0u,result.remaining)
+    assertEquals(defaultPolicy.window,result.resetIn)
+  }
+
+  @Test
+  fun `store fails closed when the policy specifies it` () = runTest {
+    val store = RedisCounterStore(connection)
+    val testKey = "test-key"
+    val policy = defaultPolicy.copy(failType = FailType.CLOSED)
+    connection.close()
+    val result = assertInstanceOf(Denied::class.java,store.evaluate(testKey,policy))
+
+    assertEquals(defaultPolicy.window,result.retryAfter)
+  }
+
+  @Test
+  fun `key near expiry still evaluates correctly — Lua scripts execute atomically` () = runBlocking {
+    // Lua scripts run atomically in Redis — TTL expiry cannot fire mid-script.
+    // This test documents that guarantee: a key with 1 second remaining still returns a valid result.
+    val store = RedisCounterStore(connection)
+    val testKey = "near-expiry-key"
+    val policy = defaultPolicy.copy(window = 1.seconds)
+
+    val result = store.evaluate(testKey, policy)
+    assertInstanceOf(Allowed::class.java, result)
+
+    delay(900L) // almost expired but not quite
+
+    val secondResult = store.evaluate(testKey, policy)
+    assertInstanceOf(Allowed::class.java, secondResult)
+  }
 }

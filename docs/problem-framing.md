@@ -63,7 +63,9 @@ Decision on which to implement first is an ADR. Sliding window counter is the li
   than allowing some excess. But security-sensitive consumers (auth endpoints) should fail closed.
   This must be configurable per policy.
 - **Redis returns unexpected data** — corrupted key, wrong type at key (WRONGTYPE error).
-  Treat as "key absent", log, re-initialise. Don't crash the service.
+  Return `Failed` with a descriptive reason and log it. Don't silently reset — something
+  unexpected happened and masking it hides bugs. The caller's `failType` policy decides
+  whether to allow or deny while the issue is surfaced for investigation.
 - **Redis latency spike** — request to the limiter shouldn't be slower than the request it's
   protecting. Timeout must be aggressive (50ms?). On timeout, apply fail-open/closed policy.
 

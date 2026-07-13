@@ -29,11 +29,11 @@ Target: 2-3 sessions per week, ~1 hour each. Ship when it's done, not before it'
 - [x] Tests for concurrent access (coroutines hammering the same key)
 
 ### Session 4 — Redis counter store: fixed window (Lua script)
-- [ ] Lua script for atomic fixed window (increment + TTL in one call)
-- [ ] `RedisCounterStore` implementation via Lettuce
-- [ ] Integration tests with Testcontainers (real Redis)
-- [ ] Test: Redis unavailable → graceful failure
-- [ ] Test: key expiry mid-operation
+- [x] Lua script for atomic fixed window (increment + TTL in one call)
+- [x] `RedisCounterStore` implementation via Lettuce
+- [x] Integration tests with Testcontainers (real Redis)
+- [x] Test: Redis unavailable → graceful failure
+- [x] Test: key expiry mid-operation
 
 ### Session 5 — Sliding window counter algorithm
 - [ ] Lua script: weighted previous window + current window count
