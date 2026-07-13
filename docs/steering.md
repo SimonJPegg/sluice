@@ -15,7 +15,7 @@ is measured against this. If something contradicts this doc, this doc wins.
 - **Logging:** Logback with structured JSON output
 - **Build:** Gradle (Kotlin DSL)
 - **Linting:** detekt (strict config, complexity rules enabled)
-- **Testing:** JUnit 5 + Testcontainers (Redis) + MockK
+- **Testing:** JUnit 6 + Testcontainers (Redis) + MockK
 - **Container:** Docker multi-stage build, distroless base
 - **Deployment:** Helm chart, GitHub Actions CI, GHCR for images
 - **Target:** Kubernetes homelab, dedicated namespace

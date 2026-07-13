@@ -1,12 +1,19 @@
 # Sluice
 
-A standalone rate limiting service. You ask "can I do this?" over HTTP, it tells you yes or no with a bit of context
+A standalone rate limiting service. You ask "can I do this?" over HTTP, it tells you yes or no with a bit of context.
 
 ## Status
 
 Work in progress. Building this to learn Kotlin properly.
 
-Currently: in-memory counter store with fixed window algorithm, tested under concurrent load. Redis, HTTP layer, and the other three algorithms are coming.
+Currently implemented:
+- Fixed window algorithm (in-memory + Redis Lua script)
+- Sliding window counter algorithm (in-memory + Redis Lua script)
+- Strategy pattern — algorithms are pluggable, stores are thin dispatchers
+- Concurrent access tested and proven (ConcurrentHashMap.compute + Redis atomicity)
+- Fail-open/fail-closed error handling when Redis is unavailable
+
+Coming: sliding window log, token bucket, HTTP API, metrics, Helm chart.
 
 ## Tech
 

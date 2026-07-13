@@ -1,18 +1,15 @@
-package org.antipathy.sluice.store
+package org.antipathy.sluice.core.redis
 
 import com.redis.testcontainers.RedisContainer
 import io.lettuce.core.RedisClient
 import io.lettuce.core.api.StatefulRedisConnection
-import kotlin.test.Test
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.testcontainers.utility.DockerImageName
 
-abstract class RedisCounterStoreTest {
-
+abstract class RedisTest {
   lateinit var client: RedisClient
   lateinit var connection: StatefulRedisConnection<String, String>
 
@@ -29,15 +26,9 @@ abstract class RedisCounterStoreTest {
     client.close()
   }
 
-
-  @Test
-  fun `validate testcontainer is working as expected`() {
-    val commands = connection.sync()
-    assertEquals("PONG",commands.ping())
-  }
-
   companion object {
     val redisServer = RedisContainer(DockerImageName.parse("redis:8.8.0"))
+
     @JvmStatic
     @BeforeAll
     fun setUp() {
@@ -52,4 +43,3 @@ abstract class RedisCounterStoreTest {
   }
 
 }
-
