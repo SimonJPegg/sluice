@@ -13,10 +13,6 @@ import org.antipathy.sluice.core.model.RateLimitResponse
 /** Dispatches to Redis-backed algorithms. Handles connection failures per the policy's fail stance. */
 class RedisCounterStore(private val algorithms: Map<AlgorithmType, RedisAlgorithm>) : CounterStore {
 
-  init {
-    // why: scripts must be loaded before any evaluate call. Fail loudly at startup, not at first request.
-    algorithms.forEach { _, algorithm -> algorithm.loadScript() }
-  }
 
   override suspend fun evaluate(key: String, policy: Policy): RateLimitResponse {
     return try {

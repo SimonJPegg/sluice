@@ -38,7 +38,7 @@ class FixedWindowCounterTest {
   }
 
   @Test
-  fun `multiple increments - remaining decreases with each request`() = runTest {
+  fun `multiple increments,  remaining decreases with each request`() = runTest {
     val algorithm = InMemoryFixedWindow(clock = FakeClock())
     repeat(defaultPolicy.limit.toInt()) { i ->
       val result = algorithm.calculate("key", defaultPolicy)
@@ -48,7 +48,7 @@ class FixedWindowCounterTest {
   }
 
   @Test
-  fun `at-limit - request number limit+1 returns Denied`() = runTest {
+  fun `at-limit, request number limit+1 returns Denied`() = runTest {
     val algorithm = InMemoryFixedWindow(clock = FakeClock())
     val testKey = "test-key"
     repeat(defaultPolicy.limit.toInt()) { i ->
@@ -61,7 +61,7 @@ class FixedWindowCounterTest {
   }
 
   @Test
-  fun `window expiry - after advancing clock past window, counter resets`() = runTest {
+  fun `window expiry, after advancing clock past window, counter resets`() = runTest {
     val clock = FakeClock()
     val algorithm = InMemoryFixedWindow(clock = clock)
     val testKey = "test-key"

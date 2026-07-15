@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.seconds
 
-class InMemorySlidingWindowTest {
+class InMemorySlidingWindowCounterTest {
 
   private val defaultPolicy =
       Policy(
@@ -47,7 +47,7 @@ class InMemorySlidingWindowTest {
     }
   }
 
-  @Test fun `at limit - next request returns Denied`() = runTest {
+  @Test fun `at limit, next request returns Denied`() = runTest {
     val algorithm = InMemorySlidingWindowCounter(FakeClock())
     val key = "test-key"
     repeat(defaultPolicy.limit.toInt()) { i ->
@@ -60,7 +60,7 @@ class InMemorySlidingWindowTest {
   }
 
   @Test
-  fun `mid-window accuracy - 50 percent through window, previous count weighted at 50 percent`() = runTest {
+  fun `mid-window accuracy, 50 percent through window, previous count weighted at 50 percent`() = runTest {
     val clock = FakeClock()
     val algorithm = InMemorySlidingWindowCounter(clock)
     val key = "test-key"
@@ -74,7 +74,7 @@ class InMemorySlidingWindowTest {
     assertEquals((defaultPolicy.limit / 2u) - 1u, result.remaining)
   }
 
-  @Test fun `window rolls over - previous count carries forward with weight`() = runTest {
+  @Test fun `window rolls over, previous count carries forward with weight`() = runTest {
     val clock = FakeClock()
     val algorithm = InMemorySlidingWindowCounter(clock)
     val key = "test-key"
@@ -88,7 +88,7 @@ class InMemorySlidingWindowTest {
     assertEquals(1u, result.remaining)
   }
 
-  @Test fun `two windows stale - previous count discarded entirely, fresh start`() = runTest {
+  @Test fun `two windows stale, previous count discarded entirely, fresh start`() = runTest {
     val clock = FakeClock()
     val algorithm = InMemorySlidingWindowCounter(clock)
     val key = "test-key"
@@ -102,7 +102,7 @@ class InMemorySlidingWindowTest {
     assertEquals(defaultPolicy.limit -1u, result.remaining)
   }
 
-  @Test fun `burst at window boundary - previous window's weight prevents 2x burst`() = runTest {
+  @Test fun `burst at window boundary, previous window's weight prevents 2x burst`() = runTest {
     val clock = FakeClock()
     val algorithm = InMemorySlidingWindowCounter(clock)
     val key = "test-key"
@@ -125,7 +125,7 @@ class InMemorySlidingWindowTest {
   }
 
   @Test
-  fun `concurrent access - coroutines hammering same key, total allowed less than or equal limit`() =
+  fun `concurrent access, coroutines hammering same key, total allowed less than or equal limit`() =
     runBlocking {
       val algorithm = InMemorySlidingWindowCounter()
       val testKey = "test-key"

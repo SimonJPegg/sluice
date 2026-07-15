@@ -7,6 +7,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
+import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
 import org.antipathy.sluice.core.model.AlgorithmType
 import org.antipathy.sluice.core.model.Allowed
 import org.antipathy.sluice.core.model.Denied
@@ -31,8 +32,7 @@ class RedisSlidingWindowCounterTest: RedisTest() {
     )
 
   @Test fun `first request returns Allowed with remaining = limit - 1`() = runTest {
-    val algorithm = RedisSlidingWindowCounter(connection)
-    algorithm.loadScript()
+    val algorithm = RedisSlidingWindowCounter(ScriptLoader(connection))
     val key = "test-key"
 
     val result = Assertions.assertInstanceOf(Allowed::class.java, algorithm.calculate(key, defaultPolicy))
@@ -41,8 +41,7 @@ class RedisSlidingWindowCounterTest: RedisTest() {
   }
 
   @Test fun `multiple requests within same window - remaining decreases`() = runTest {
-    val algorithm =RedisSlidingWindowCounter(connection)
-    algorithm.loadScript()
+    val algorithm =RedisSlidingWindowCounter(ScriptLoader(connection))
     val key = "test-key"
     repeat(defaultPolicy.limit.toInt()) { i ->
       val result = algorithm.calculate(key, defaultPolicy)
@@ -52,8 +51,7 @@ class RedisSlidingWindowCounterTest: RedisTest() {
   }
 
   @Test fun `at limit - next request returns Denied`() = runTest {
-    val algorithm = RedisSlidingWindowCounter(connection)
-    algorithm.loadScript()
+    val algorithm = RedisSlidingWindowCounter(ScriptLoader(connection))
     val key = "test-key"
     repeat(defaultPolicy.limit.toInt()) { i ->
       val result = algorithm.calculate(key, defaultPolicy)
@@ -66,8 +64,7 @@ class RedisSlidingWindowCounterTest: RedisTest() {
 
   @Test
   fun `mid-window accuracy - 50 percent through window, previous count weighted at 50 percent`() = runBlocking {
-    val algorithm = RedisSlidingWindowCounter(connection)
-    algorithm.loadScript()
+    val algorithm = RedisSlidingWindowCounter(ScriptLoader(connection))
     val key = "test-key"
     repeat(defaultPolicy.limit.toInt()) { i ->
       val result = algorithm.calculate(key, defaultPolicy)
@@ -80,8 +77,7 @@ class RedisSlidingWindowCounterTest: RedisTest() {
   }
 
   @Test fun `window rolls over - previous count carries forward with weight`() = runBlocking {
-    val algorithm = RedisSlidingWindowCounter(connection)
-    algorithm.loadScript()
+    val algorithm = RedisSlidingWindowCounter(ScriptLoader(connection))
     val key = "test-key"
     repeat(defaultPolicy.limit.toInt()) { i ->
       val result = algorithm.calculate(key, defaultPolicy)
@@ -94,8 +90,7 @@ class RedisSlidingWindowCounterTest: RedisTest() {
   }
 
   @Test fun `two windows stale - previous count discarded entirely, fresh start`() = runBlocking {
-    val algorithm = RedisSlidingWindowCounter(connection)
-    algorithm.loadScript()
+    val algorithm = RedisSlidingWindowCounter(ScriptLoader(connection))
     val key = "test-key"
     repeat(defaultPolicy.limit.toInt()) { i ->
       val result = algorithm.calculate(key, defaultPolicy)
@@ -108,8 +103,7 @@ class RedisSlidingWindowCounterTest: RedisTest() {
   }
 
   @Test fun `burst at window boundary - previous window's weight prevents 2x burst`() = runBlocking {
-    val algorithm = RedisSlidingWindowCounter(connection)
-    algorithm.loadScript()
+    val algorithm = RedisSlidingWindowCounter(ScriptLoader(connection))
     val key = "test-key"
     val policy = defaultPolicy.copy(window = 5.seconds)
     // exhaust the budget at the start of the window
@@ -126,8 +120,7 @@ class RedisSlidingWindowCounterTest: RedisTest() {
   @Test
   fun `concurrent access - coroutines hammering same key, total allowed less than or equal limit`() =
     runBlocking {
-      val algorithm = RedisSlidingWindowCounter(connection)
-      algorithm.loadScript()
+      val algorithm = RedisSlidingWindowCounter(ScriptLoader(connection))
       val testKey = "test-key"
       val policy = defaultPolicy.copy(limit = 100u)
       withContext(Dispatchers.Default) {

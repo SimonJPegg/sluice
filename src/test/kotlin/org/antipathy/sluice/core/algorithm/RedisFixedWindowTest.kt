@@ -11,6 +11,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
+import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
 import org.antipathy.sluice.core.model.AlgorithmType
 import org.antipathy.sluice.core.model.Allowed
 import org.antipathy.sluice.core.model.Denied
@@ -33,8 +34,7 @@ class RedisFixedWindowTest : RedisTest() {
 
   @Test
   fun `first request returns Allowed with remaining = limit - 1`() = runTest {
-    val algorithm = RedisFixedWindow(connection)
-    algorithm.loadScript()
+    val algorithm = RedisFixedWindow(ScriptLoader(connection))
     val testKey = "test-key"
     val result = assertInstanceOf(Allowed::class.java, algorithm.calculate(testKey, defaultPolicy))
 
@@ -43,9 +43,8 @@ class RedisFixedWindowTest : RedisTest() {
   }
 
   @Test
-  fun `multiple increments - remaining decreases with each request`() = runTest {
-    val algorithm = RedisFixedWindow(connection)
-    algorithm.loadScript()
+  fun `multiple increments, remaining decreases with each request`() = runTest {
+    val algorithm = RedisFixedWindow(ScriptLoader(connection))
     repeat(defaultPolicy.limit.toInt()) { i ->
       val result = algorithm.calculate("key", defaultPolicy)
       check(result is Allowed)
@@ -54,9 +53,8 @@ class RedisFixedWindowTest : RedisTest() {
   }
 
   @Test
-  fun `at-limit - request number limit+1 returns Denied`() = runTest {
-    val algorithm = RedisFixedWindow(connection)
-    algorithm.loadScript()
+  fun `at-limit, request number limit+1 returns Denied`() = runTest {
+    val algorithm = RedisFixedWindow(ScriptLoader(connection))
     val testKey = "test-key"
     repeat(defaultPolicy.limit.toInt()) { i ->
       val result = algorithm.calculate(testKey, defaultPolicy)
@@ -68,9 +66,8 @@ class RedisFixedWindowTest : RedisTest() {
   }
 
   @Test
-  fun `window expiry - after advancing clock past window, counter resets`() = runBlocking {
-    val algorithm = RedisFixedWindow(connection)
-    algorithm.loadScript()
+  fun `window expiry, after advancing clock past window, counter resets`() = runBlocking {
+    val algorithm = RedisFixedWindow(ScriptLoader(connection))
     val testKey = "test-key"
     val policy = defaultPolicy.copy(window = 2.seconds)
 
@@ -87,8 +84,7 @@ class RedisFixedWindowTest : RedisTest() {
 
   @Test
   fun `multiple keys have independent counts`() = runTest {
-    val algorithm = RedisFixedWindow(connection)
-    algorithm.loadScript()
+    val algorithm = RedisFixedWindow(ScriptLoader(connection))
     val secondPolicy = defaultPolicy.copy(limit = 6u)
     val testKey1 = "test-key"
     val testKey2 = "test-key2"
@@ -106,8 +102,7 @@ class RedisFixedWindowTest : RedisTest() {
 
   @Test
   fun `concurrent access does not alter store behaviour`() = runBlocking {
-    val algorithm = RedisFixedWindow(connection)
-    algorithm.loadScript()
+    val algorithm = RedisFixedWindow(ScriptLoader(connection))
     val testKey = "test-key"
     val policy = defaultPolicy.copy(limit = 100u)
     withContext(Dispatchers.Default) {
@@ -126,12 +121,11 @@ class RedisFixedWindowTest : RedisTest() {
   }
 
   @Test
-  fun `key near expiry still evaluates correctly - Lua scripts execute atomically`() = runBlocking {
+  fun `key near expiry still evaluates correctly, Lua scripts execute atomically`() = runBlocking {
     // Lua scripts run atomically in Redis - TTL expiry cannot fire mid-script.
     // This test documents that guarantee: a key with 1 second remaining still returns a valid
     // result.
-    val algorithm = RedisFixedWindow(connection)
-    algorithm.loadScript()
+    val algorithm = RedisFixedWindow(ScriptLoader(connection))
     val testKey = "near-expiry-key"
     val policy = defaultPolicy.copy(window = 1.seconds)
 

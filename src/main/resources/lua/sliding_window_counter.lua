@@ -2,8 +2,7 @@
 -- KEYS[1] = rate limit key (Redis hash)
 -- ARGV[1] = limit (max requests per window)
 -- ARGV[2] = window duration in seconds
--- Returns: {current_count_after_increment, ttl_remaining}
---   If denied, current_count_after_increment > limit
+-- Returns: {allowed (1/0), estimated_count, ttl_remaining}
 
 local key = KEYS[1]
 local limit = tonumber(ARGV[1])
@@ -22,7 +21,7 @@ local now = tonumber(time[1])
 if window_start == 0 then
   redis.call('HSET', key, 'current', 1, 'previous', 0, 'start', now)
   redis.call('EXPIRE', key, window * 2)
-  return {1, window}
+  return {1, 1, window}
 end
 
 local elapsed = now - window_start
@@ -31,7 +30,7 @@ local elapsed = now - window_start
 if elapsed >= (window * 2) then
   redis.call('HSET', key, 'current', 1, 'previous', 0, 'start', now)
   redis.call('EXPIRE', key, window * 2)
-  return {1, window}
+  return {1, 1, window}
 end
 
 -- One window expired — rotate
@@ -50,7 +49,7 @@ local estimated = math.floor(previous_count * overlap) + current_count
 
 -- Check limit before incrementing
 if estimated + 1 > limit then
-  return {estimated + 1, remaining}
+  return {0, estimated + 1, remaining}
 end
 
 -- Under limit — increment and allow
@@ -58,4 +57,4 @@ current_count = current_count + 1
 redis.call('HSET', key, 'current', current_count)
 redis.call('EXPIRE', key, window * 2)
 
-return {current_count + math.floor(previous_count * overlap), remaining}
+return {1, current_count + math.floor(previous_count * overlap), remaining}

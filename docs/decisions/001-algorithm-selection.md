@@ -4,41 +4,27 @@
 
 ## Context
 
-Rate limiting has multiple well-known algorithms, each with different tradeoffs around precision,
-memory usage, and burst tolerance. We need to pick which to support and in what order.
+Four well-known rate limiting algorithms. Each trades off precision, memory, and burst tolerance differently:
 
-The four candidates:
+- **Fixed window** — one counter, one TTL. Dead simple. Can burst 2x at the boundary between windows.
+- **Sliding window counter** — two fixed windows, weighted overlap. Good enough precision, bounded memory. The "just use this" default in most literature.
+- **Sliding window log** — stores every timestamp. Exact counting but memory grows linearly with traffic.
+- **Token bucket** — refills tokens at a steady rate. Allows bursts up to bucket capacity. Different mental model entirely (capacity, not count).
 
-- **Fixed window** — simplest. One counter, one TTL. Vulnerable to 2x burst at window edges.
-- **Sliding window counter** — weighted approximation across two fixed windows. Good precision,
-  bounded memory. The "sensible default" in most literature.
-- **Sliding window log** — stores every request timestamp. Precise but memory grows linearly
-  with request rate.
-- **Token bucket** — capacity-based, refills at a steady rate. Allows bursts up to bucket size.
-  Different mental model (capacity vs count).
-
-The question isn't which one is "best" — it's whether we pick one or support all four.
+Question: pick one, or support all four?
 
 ## Decision
 
-Implement all four. The algorithm is an enum on the policy config — the consumer picks the
-strategy that fits their use case. Fixed window first because it's the simplest implementation
-and proves the interface works before we build the harder ones.
+All four. The algorithm is a field on the policy — consumers choose the strategy that fits. Fixed window first because it's trivial and proves the interface works before we tackle the harder ones.
 
-The `CounterStore` dispatches to the correct Lua script based on `policy.algorithmType`. The
-interface is the same regardless of algorithm — `evaluate(key, policy) → RateLimitResponse`.
-
-If the interface survives all four without modification, the design is correct. If it doesn't,
-we fix it when it breaks rather than over-engineering up front.
+The interface is `evaluate(key, policy) → RateLimitResponse` regardless of which algorithm runs underneath. If that interface survives all four without changing, the design is right. If it breaks, we fix it when it breaks — not before.
 
 ## Consequences
 
-- Counter store implementations need four Lua scripts (one per algorithm). More code, but each
-  script is small and independently testable.
-- Adding a fifth algorithm later means: add an enum value, write the script, add a branch in
-  the store. Low ceremony.
-- Consumers must explicitly choose an algorithm in their policy config. No default — forces them
-  to think about whether they want burst tolerance or strict counting.
-- Fixed window going first means we'll have a working end-to-end system quickly. The other three
-  slot in without changing anything above the store layer. If they don't, that's the signal the
-  abstraction is wrong.
+Four Lua scripts. Each is small, each is independently testable.
+
+Adding a fifth algorithm later: add an enum value, write the script, done. Nothing above the store layer changes.
+
+No default algorithm — consumers must pick one explicitly. Forces them to think about whether they want burst tolerance or strict counting.
+
+Fixed window first means we get end-to-end working fast. The others slot in behind the same interface. If they don't, that's the signal the abstraction was wrong.
