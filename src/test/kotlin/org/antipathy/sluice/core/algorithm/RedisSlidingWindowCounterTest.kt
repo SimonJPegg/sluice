@@ -113,7 +113,8 @@ class RedisSlidingWindowCounterTest: RedisTest() {
     // sliding window should prevent a full burst: fewer than limit requests allowed
     val results = List(policy.limit.toInt()) { algorithm.calculate(key, policy) }
     val allowed = results.count { it is Allowed }
-    assertTrue(allowed < policy.limit.toInt(), "Expected burst protection: got $allowed allowed (fixed window would allow ${policy.limit})")
+    assertTrue(allowed < policy.limit.toInt(),
+      "Expected burst protection: got $allowed allowed (fixed window would allow ${policy.limit})")
     assertTrue(allowed > 0, "Expected at least one request to be allowed after boundary")
   }
 

@@ -21,7 +21,7 @@ class InMemoryFixedWindow(private val clock: Clock = Clock.System) : InMemoryAlg
   private val counters = ConcurrentHashMap<String, FixedWindowCounter>()
 
   override suspend fun calculate(key: String, policy: Policy): RateLimitResponse {
-    //pre-assign a value, to avoid null handling
+    // pre-assign a value, to avoid null handling
     var result: RateLimitResponse = Failed(reason = "unexpected: compute lambda did not execute")
     counters.compute(key) { _, existing ->
       val currentTime = clock.now()

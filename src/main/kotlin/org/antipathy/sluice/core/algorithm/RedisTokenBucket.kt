@@ -1,7 +1,7 @@
 package org.antipathy.sluice.core.algorithm
 
 import io.lettuce.core.ScriptOutputType
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.future.await
 import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
 import org.antipathy.sluice.core.model.Allowed
@@ -9,18 +9,9 @@ import org.antipathy.sluice.core.model.Denied
 import org.antipathy.sluice.core.model.Policy
 import org.antipathy.sluice.core.model.RateLimitResponse
 
-/** One function per algorithm. Keeps counting strategies pluggable. */
-sealed interface Algorithm {
-  suspend fun calculate(key: String, policy: Policy): RateLimitResponse
-}
-
-/** Algorithms that manage their own state in-process. */
-sealed interface InMemoryAlgorithm : Algorithm
-
-/** Algorithms that delegate to Redis via Lua scripts. */
-sealed class RedisAlgorithm(protected val scriptLoader: ScriptLoader) : Algorithm {
-  abstract val fileLocation: String
-  val sha by lazy { scriptLoader.loadScript(fileLocation) }
+/** Overrides base because token bucket returns remaining tokens, not request count. Also needs millisecond ttl. */
+class RedisTokenBucket(scriptLoader: ScriptLoader) : RedisAlgorithm(scriptLoader) {
+  override val fileLocation: String = "/lua/token_bucket.lua"
 
   override suspend fun calculate(key: String, policy: Policy): RateLimitResponse {
     val result =
@@ -36,11 +27,11 @@ sealed class RedisAlgorithm(protected val scriptLoader: ScriptLoader) : Algorith
             .await()
 
     val allowed = result[0] == 1L
-    val count = result[1].toUInt()
-    val ttl = result[2].seconds
+    val remaining = result[1].toUInt() // <-- this is why we're overriding here
+    val ttl = result[2].milliseconds // also milliseconds
 
     return if (allowed) {
-      Allowed(policy.limit - count, ttl)
+      Allowed(remaining, ttl)
     } else {
       Denied(ttl)
     }

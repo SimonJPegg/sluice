@@ -5,7 +5,7 @@ import org.antipathy.sluice.core.exceptions.RedisScriptMissingException
 
 /** Loads a Lua script into Redis at startup and caches the SHA for evalsha calls. */
 class ScriptLoader(
-  private val redisConnection: StatefulRedisConnection<String, String>,
+    private val redisConnection: StatefulRedisConnection<String, String>,
 ) {
 
   /** Call before calculate. Registers the script with Redis so we can evalsha later. */

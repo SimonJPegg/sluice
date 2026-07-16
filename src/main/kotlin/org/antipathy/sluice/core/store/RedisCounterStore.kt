@@ -10,9 +10,10 @@ import org.antipathy.sluice.core.model.Failed
 import org.antipathy.sluice.core.model.Policy
 import org.antipathy.sluice.core.model.RateLimitResponse
 
-/** Dispatches to Redis-backed algorithms. Handles connection failures per the policy's fail stance. */
+/**
+ * Dispatches to Redis-backed algorithms. Handles connection failures per the policy's fail stance.
+ */
 class RedisCounterStore(private val algorithms: Map<AlgorithmType, RedisAlgorithm>) : CounterStore {
-
 
   override suspend fun evaluate(key: String, policy: Policy): RateLimitResponse {
     return try {
@@ -21,9 +22,7 @@ class RedisCounterStore(private val algorithms: Map<AlgorithmType, RedisAlgorith
       Failed(reason = "Algorithm ${policy.algorithmType} has not been implemented yet")
     } catch (_: RedisException) {
       return if (policy.failType == FailType.OPEN) {
-        // no way to calculate here, so tell the consumer that they've hit the limit for now and to
-        // wait until the
-        // next window. Policy has already told us to allow it.
+        // can't calculate, fail-open per policy
         Allowed(0u, policy.window)
       } else {
         Denied(policy.window)

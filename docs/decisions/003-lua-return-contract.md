@@ -29,3 +29,4 @@ All three scripts updated at once. Token bucket will follow the same shape.
 
 The `count` field is now informational (drives `remaining` in the response header). If a script returns wrong count but correct flag, the decision is still right — just the `X-RateLimit-Remaining` header is off.
 
+Token bucket overrides `calculate` because its `count` means "tokens remaining" not "requests made."

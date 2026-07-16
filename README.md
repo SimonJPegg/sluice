@@ -9,11 +9,13 @@ Work in progress. Building this to learn Kotlin properly.
 Currently implemented:
 - Fixed window algorithm (in-memory + Redis Lua script)
 - Sliding window counter algorithm (in-memory + Redis Lua script)
+- Sliding window log algorithm (in-memory + Redis Lua script)
+- Token bucket algorithm (in-memory + Redis Lua script)
 - Strategy pattern — algorithms are pluggable, stores are thin dispatchers
 - Concurrent access tested and proven (ConcurrentHashMap.compute + Redis atomicity)
 - Fail-open/fail-closed error handling when Redis is unavailable
 
-Coming: sliding window log, token bucket, HTTP API, metrics, Helm chart.
+Coming: HTTP API, policy registry, metrics, Helm chart.
 
 ## Tech
 

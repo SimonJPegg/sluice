@@ -16,15 +16,18 @@ private data class SlidingWindowCounter(
     val windowStarted: Instant,
 )
 
-/** Smooths fixed window's burst-at-boundary problem using weighted approximation of the previous window. */
+/**
+ * Smooths fixed window's burst-at-boundary problem using weighted approximation of the previous
+ * window.
+ */
 class InMemorySlidingWindowCounter(private val clock: Clock = Clock.System) : InMemoryAlgorithm {
 
   private val counters = ConcurrentHashMap<String, SlidingWindowCounter>()
 
   override suspend fun calculate(key: String, policy: Policy): RateLimitResponse {
-    //pre-assign a value, to avoid null handling
+    // pre-assign a value, to avoid null handling
     var result: RateLimitResponse = Failed(reason = "unexpected: compute lambda did not execute")
-    counters.compute(key) {_, existing ->
+    counters.compute(key) { _, existing ->
       val currentTime = clock.now()
       val counter = existing ?: SlidingWindowCounter(0u, 0u, currentTime)
       val (rolledCounter, remaining) = rollWindow(counter, currentTime, policy.window)
@@ -37,10 +40,12 @@ class InMemorySlidingWindowCounter(private val clock: Clock = Clock.System) : In
   }
 
   /** Detects window expiry and rotates counters if needed. */
+  @Suppress("ReturnCount") // 3 is fine here.
   private fun rollWindow(
-    counter: SlidingWindowCounter,
-    currentTime: Instant,
-    window: Duration): Pair<SlidingWindowCounter, Duration> {
+      counter: SlidingWindowCounter,
+      currentTime: Instant,
+      window: Duration
+  ): Pair<SlidingWindowCounter, Duration> {
     if (currentTime - counter.windowStarted >= window + window) {
       // Two or more windows stale, previous is meaningless
       return Pair(SlidingWindowCounter(0u, 0u, currentTime), window)
@@ -49,37 +54,41 @@ class InMemorySlidingWindowCounter(private val clock: Clock = Clock.System) : In
     if (remaining <= Duration.ZERO) {
       val newWindowStart = counter.windowStarted + window
       return Pair(
-        counter.copy(currentWindowCount = 0u, previousWindowCount = counter.currentWindowCount, windowStarted = newWindowStart),
-        window - (currentTime.minus(newWindowStart))
-      )
+          counter.copy(
+              currentWindowCount = 0u,
+              previousWindowCount = counter.currentWindowCount,
+              windowStarted = newWindowStart),
+          window - (currentTime.minus(newWindowStart)))
     }
     return Pair(counter, remaining)
   }
 
-  /** Weighted approximation: previous window's contribution decays as current window progresses. */
-  private fun estimate(rolledCounter: SlidingWindowCounter, remaining: Duration, window: Duration) : UInt {
+  /** Previous window counts less the further into the current window we are. */
+  private fun estimate(
+      rolledCounter: SlidingWindowCounter,
+      remaining: Duration,
+      window: Duration
+  ): UInt {
     val overlapPercent = (remaining / window)
-    val estimated = (rolledCounter.previousWindowCount.toInt() * overlapPercent).toUInt() + rolledCounter.currentWindowCount
+    val estimated =
+        (rolledCounter.previousWindowCount.toInt() * overlapPercent).toUInt() +
+            rolledCounter.currentWindowCount
     return estimated
   }
 
   /** Compares estimated count against limit. Returns updated counter and the verdict. */
   private fun decide(
-    rolledCounter: SlidingWindowCounter,
-    estimated: UInt,
-    policy: Policy,
-    remaining: Duration
+      rolledCounter: SlidingWindowCounter,
+      estimated: UInt,
+      policy: Policy,
+      remaining: Duration
   ): Pair<SlidingWindowCounter, RateLimitResponse> {
     return if (estimated + 1u <= policy.limit) {
       Pair(
-        rolledCounter.copy(currentWindowCount = rolledCounter.currentWindowCount + 1u),
-        Allowed(policy.limit - (estimated + 1u), remaining)
-      )
+          rolledCounter.copy(currentWindowCount = rolledCounter.currentWindowCount + 1u),
+          Allowed(policy.limit - (estimated + 1u), remaining))
     } else {
-      Pair(
-        rolledCounter,
-        Denied(remaining)
-      )
+      Pair(rolledCounter, Denied(remaining))
     }
   }
 }
