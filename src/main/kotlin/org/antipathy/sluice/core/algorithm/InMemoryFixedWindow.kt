@@ -6,8 +6,8 @@ import kotlin.time.Instant
 import org.antipathy.sluice.core.model.Allowed
 import org.antipathy.sluice.core.model.Denied
 import org.antipathy.sluice.core.model.Failed
-import org.antipathy.sluice.core.model.Policy
 import org.antipathy.sluice.core.model.RateLimitResponse
+import org.antipathy.sluice.core.policy.Policy
 
 /** Immutable snapshot. Replaced on each request, never mutated. */
 private data class FixedWindowCounter(

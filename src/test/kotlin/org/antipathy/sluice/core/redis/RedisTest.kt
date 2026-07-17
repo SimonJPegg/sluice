@@ -41,5 +41,4 @@ abstract class RedisTest {
       redisServer.stop()
     }
   }
-
 }

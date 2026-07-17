@@ -1,0 +1,6 @@
+policies:
+  - id: webhook-retry
+    limit: 3
+    window: "PT1M"
+    algorithmType: token_bucket
+    failType: closed

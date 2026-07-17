@@ -6,10 +6,13 @@ import kotlinx.coroutines.future.await
 import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
 import org.antipathy.sluice.core.model.Allowed
 import org.antipathy.sluice.core.model.Denied
-import org.antipathy.sluice.core.model.Policy
 import org.antipathy.sluice.core.model.RateLimitResponse
+import org.antipathy.sluice.core.policy.Policy
 
-/** Overrides base because token bucket returns remaining tokens, not request count. Also needs millisecond ttl. */
+/**
+ * Overrides base because token bucket returns remaining tokens, not request count. Also needs
+ * millisecond ttl.
+ */
 class RedisTokenBucket(scriptLoader: ScriptLoader) : RedisAlgorithm(scriptLoader) {
   override val fileLocation: String = "/lua/token_bucket.lua"
 

@@ -4,11 +4,11 @@ import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.test.runTest
 import org.antipathy.sluice.core.algorithm.FakeClock
 import org.antipathy.sluice.core.algorithm.InMemoryFixedWindow
-import org.antipathy.sluice.core.model.AlgorithmType
 import org.antipathy.sluice.core.model.Allowed
-import org.antipathy.sluice.core.model.FailType
 import org.antipathy.sluice.core.model.Failed
-import org.antipathy.sluice.core.model.Policy
+import org.antipathy.sluice.core.policy.AlgorithmType
+import org.antipathy.sluice.core.policy.FailType
+import org.antipathy.sluice.core.policy.Policy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Test

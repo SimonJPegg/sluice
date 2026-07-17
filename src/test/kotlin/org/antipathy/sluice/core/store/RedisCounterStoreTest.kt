@@ -1,34 +1,32 @@
 package org.antipathy.sluice.core.store
 
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import org.antipathy.sluice.core.algorithm.FakeClock
-import org.antipathy.sluice.core.algorithm.InMemoryFixedWindow
 import org.antipathy.sluice.core.algorithm.RedisFixedWindow
 import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
-import org.antipathy.sluice.core.model.AlgorithmType
 import org.antipathy.sluice.core.model.Allowed
 import org.antipathy.sluice.core.model.Denied
-import org.antipathy.sluice.core.model.FailType
 import org.antipathy.sluice.core.model.Failed
-import org.antipathy.sluice.core.model.Policy
+import org.antipathy.sluice.core.policy.AlgorithmType
+import org.antipathy.sluice.core.policy.FailType
+import org.antipathy.sluice.core.policy.Policy
 import org.antipathy.sluice.core.redis.RedisTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Test
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.minutes
 
-class RedisCounterStoreTest: RedisTest() {
+class RedisCounterStoreTest : RedisTest() {
 
   private val defaultPolicy =
-    Policy(
-      id = "test-policy",
-      limit = 5u,
-      failType = FailType.OPEN,
-      window = 1.minutes,
-      algorithmType = AlgorithmType.FIXED_WINDOW,
-    )
+      Policy(
+          id = "test-policy",
+          limit = 5u,
+          failType = FailType.OPEN,
+          window = 1.minutes,
+          algorithmType = AlgorithmType.FIXED_WINDOW,
+      )
 
   @Test
   fun `validate testcontainer is working as expected`() {
@@ -39,17 +37,19 @@ class RedisCounterStoreTest: RedisTest() {
   @Test
   fun `unimplemented algorithm - returns Failed`() = runTest {
     val store =
-      RedisCounterStore(mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection))))
+        RedisCounterStore(
+            mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection))))
     val testKey = "test-key"
     assertInstanceOf(
-      Failed::class.java,
-      store.evaluate(testKey, defaultPolicy.copy(algorithmType = AlgorithmType.TOKEN_BUCKET)))
+        Failed::class.java,
+        store.evaluate(testKey, defaultPolicy.copy(algorithmType = AlgorithmType.TOKEN_BUCKET)))
   }
 
   @Test
   fun `store fails open when the policy specifies it`() = runTest {
     val store =
-      RedisCounterStore(mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection))))
+        RedisCounterStore(
+            mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection))))
     val testKey = "test-key"
     connection.close()
     val result = assertInstanceOf(Allowed::class.java, store.evaluate(testKey, defaultPolicy))
@@ -61,7 +61,8 @@ class RedisCounterStoreTest: RedisTest() {
   @Test
   fun `store fails closed when the policy specifies it`() = runTest {
     val store =
-      RedisCounterStore(mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection))))
+        RedisCounterStore(
+            mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection))))
     val testKey = "test-key"
     val policy = defaultPolicy.copy(failType = FailType.CLOSED)
     connection.close()
@@ -73,10 +74,9 @@ class RedisCounterStoreTest: RedisTest() {
   @Test
   fun `store fails according to policy when redis connection times out`() = runBlocking {
     val store =
-      RedisCounterStore(
-        mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection))),
-        1.milliseconds
-      )
+        RedisCounterStore(
+            mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection))),
+            1.milliseconds)
     val testKey = "test-key"
     val policy = defaultPolicy.copy(failType = FailType.CLOSED)
     connection.close()

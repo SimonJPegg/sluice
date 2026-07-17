@@ -1,10 +1,10 @@
 package org.antipathy.sluice.core.store
 
 import org.antipathy.sluice.core.algorithm.InMemoryAlgorithm
-import org.antipathy.sluice.core.model.AlgorithmType
 import org.antipathy.sluice.core.model.Failed
-import org.antipathy.sluice.core.model.Policy
 import org.antipathy.sluice.core.model.RateLimitResponse
+import org.antipathy.sluice.core.policy.AlgorithmType
+import org.antipathy.sluice.core.policy.Policy
 
 /** For tests and single-node deployments where Redis is overkill. */
 class InMemoryCounterStore(

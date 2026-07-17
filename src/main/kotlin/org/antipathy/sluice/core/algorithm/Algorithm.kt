@@ -6,8 +6,8 @@ import kotlinx.coroutines.future.await
 import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
 import org.antipathy.sluice.core.model.Allowed
 import org.antipathy.sluice.core.model.Denied
-import org.antipathy.sluice.core.model.Policy
 import org.antipathy.sluice.core.model.RateLimitResponse
+import org.antipathy.sluice.core.policy.Policy
 
 /** One function per algorithm. Keeps counting strategies pluggable. */
 sealed interface Algorithm {

@@ -1,0 +1,6 @@
+policies:
+  - id: login-brute-force
+    limit: 5
+    window: "PT5M"
+    algorithmType: sliding_window_log
+    failType: closed

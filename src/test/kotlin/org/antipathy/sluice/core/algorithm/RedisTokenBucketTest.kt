@@ -1,5 +1,8 @@
 package org.antipathy.sluice.core.algorithm
 
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -7,38 +10,34 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
-import org.antipathy.sluice.core.model.AlgorithmType
 import org.antipathy.sluice.core.model.Allowed
 import org.antipathy.sluice.core.model.Denied
-import org.antipathy.sluice.core.model.FailType
-import org.antipathy.sluice.core.model.Policy
+import org.antipathy.sluice.core.policy.AlgorithmType
+import org.antipathy.sluice.core.policy.FailType
+import org.antipathy.sluice.core.policy.Policy
 import org.antipathy.sluice.core.redis.RedisTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
-class RedisTokenBucketTest: RedisTest() {
+class RedisTokenBucketTest : RedisTest() {
   private val defaultPolicy =
-    Policy(
-      id = "test-policy",
-      limit = 3u,
-      failType = FailType.OPEN,
-      window = 3.seconds,
-      algorithmType = AlgorithmType.TOKEN_BUCKET,
-    )
+      Policy(
+          id = "test-policy",
+          limit = 3u,
+          failType = FailType.OPEN,
+          window = 3.seconds,
+          algorithmType = AlgorithmType.TOKEN_BUCKET,
+      )
 
-  //TokenBucket returns subsecond accuracy, these tests are not entirely deterministic
+  // TokenBucket returns subsecond accuracy, these tests are not entirely deterministic
   private val tolerance = 200.milliseconds
 
   private fun assertDurationApprox(expected: Duration, actual: Duration, msg: String = "") {
     assertTrue(
-      actual >= expected - tolerance && actual <= expected + tolerance,
-      "$msg expected ~$expected but was $actual"
-    )
+        actual >= expected - tolerance && actual <= expected + tolerance,
+        "$msg expected ~$expected but was $actual")
   }
 
   @Test
@@ -65,20 +64,21 @@ class RedisTokenBucketTest: RedisTest() {
   }
 
   @Test
-  fun `steady state refill - after waiting one token period, one more request allowed`() = runBlocking {
-    val algorithm = RedisTokenBucket(ScriptLoader(connection))
-    val key = "test-key"
+  fun `steady state refill - after waiting one token period, one more request allowed`() =
+      runBlocking {
+        val algorithm = RedisTokenBucket(ScriptLoader(connection))
+        val key = "test-key"
 
-    repeat(defaultPolicy.limit.toInt()) {
-      val result = algorithm.calculate(key, defaultPolicy)
-      check(result is Allowed)
-    }
-    assertInstanceOf(Denied::class.java, algorithm.calculate(key, defaultPolicy))
-    delay(1.1.seconds)
-    val result = assertInstanceOf(Allowed::class.java, algorithm.calculate(key, defaultPolicy))
-    assertEquals(0u, result.remaining)
-    assertDurationApprox(3.seconds, result.resetIn)
-  }
+        repeat(defaultPolicy.limit.toInt()) {
+          val result = algorithm.calculate(key, defaultPolicy)
+          check(result is Allowed)
+        }
+        assertInstanceOf(Denied::class.java, algorithm.calculate(key, defaultPolicy))
+        delay(1.1.seconds)
+        val result = assertInstanceOf(Allowed::class.java, algorithm.calculate(key, defaultPolicy))
+        assertEquals(0u, result.remaining)
+        assertDurationApprox(3.seconds, result.resetIn)
+      }
 
   @Test
   fun `overflow cap - long idle does not exceed limit`() = runBlocking {
@@ -125,22 +125,23 @@ class RedisTokenBucketTest: RedisTest() {
   }
 
   @Test
-  fun `concurrent access - coroutines hammering same key, total allowed equals limit`() = runBlocking {
-    val algorithm = RedisTokenBucket(ScriptLoader(connection))
-    val key = "test-key"
-    val policy = defaultPolicy.copy(limit = 100u)
-    withContext(Dispatchers.Default) {
-      val threads = List(200) { async { algorithm.calculate(key, policy) } }
-      val result = threads.awaitAll()
-      val (allowed, denied) = result.partition { it is Allowed }
-      assertEquals(
-        100,
-        allowed.size,
-      )
-      assertEquals(
-        100,
-        denied.size,
-      )
-    }
-  }
+  fun `concurrent access - coroutines hammering same key, total allowed equals limit`() =
+      runBlocking {
+        val algorithm = RedisTokenBucket(ScriptLoader(connection))
+        val key = "test-key"
+        val policy = defaultPolicy.copy(limit = 100u)
+        withContext(Dispatchers.Default) {
+          val threads = List(200) { async { algorithm.calculate(key, policy) } }
+          val result = threads.awaitAll()
+          val (allowed, denied) = result.partition { it is Allowed }
+          assertEquals(
+              100,
+              allowed.size,
+          )
+          assertEquals(
+              100,
+              denied.size,
+          )
+        }
+      }
 }

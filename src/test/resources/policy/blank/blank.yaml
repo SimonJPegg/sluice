@@ -1,0 +1,11 @@
+policies:
+  - id: login-brute-force
+    limit: 5
+    window: "PT5M"
+    algorithmType: sliding_window_log
+    failType: closed
+  - id: ""
+    limit: 20
+    window: "PT10M"
+    algorithmType: token_bucket
+    failType: closed

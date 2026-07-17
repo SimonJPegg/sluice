@@ -8,15 +8,14 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import org.antipathy.sluice.core.model.AlgorithmType
 import org.antipathy.sluice.core.model.Allowed
 import org.antipathy.sluice.core.model.Denied
-import org.antipathy.sluice.core.model.FailType
-import org.antipathy.sluice.core.model.Policy
+import org.antipathy.sluice.core.policy.AlgorithmType
+import org.antipathy.sluice.core.policy.FailType
+import org.antipathy.sluice.core.policy.Policy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Test
-
 
 class InMemoryTokenBucketTest {
 
@@ -35,9 +34,11 @@ class InMemoryTokenBucketTest {
     val algorithm = InMemoryTokenBucket(clock)
     val key = "test-key"
 
-    val result = assertInstanceOf(Allowed::class.java, algorithm.calculate(key,defaultPolicy))
+    val result = assertInstanceOf(Allowed::class.java, algorithm.calculate(key, defaultPolicy))
     assertEquals(defaultPolicy.limit - 1u, result.remaining)
-    assertEquals((defaultPolicy.window.inWholeSeconds.toInt() / defaultPolicy.limit.toInt()).seconds , result.resetIn)
+    assertEquals(
+        (defaultPolicy.window.inWholeSeconds.toInt() / defaultPolicy.limit.toInt()).seconds,
+        result.resetIn)
   }
 
   @Test
@@ -51,8 +52,10 @@ class InMemoryTokenBucketTest {
       check(result is Allowed)
       assertEquals(defaultPolicy.limit - (i + 1).toUInt(), result.remaining)
     }
-    val result = assertInstanceOf(Denied::class.java, algorithm.calculate(key,defaultPolicy))
-    assertEquals((defaultPolicy.window.inWholeSeconds.toInt() / defaultPolicy.limit.toInt()).seconds, result.retryAfter)
+    val result = assertInstanceOf(Denied::class.java, algorithm.calculate(key, defaultPolicy))
+    assertEquals(
+        (defaultPolicy.window.inWholeSeconds.toInt() / defaultPolicy.limit.toInt()).seconds,
+        result.retryAfter)
   }
 
   @Test
@@ -66,10 +69,12 @@ class InMemoryTokenBucketTest {
       check(result is Allowed)
       assertEquals(defaultPolicy.limit - (i + 1).toUInt(), result.remaining)
     }
-    val deny = assertInstanceOf(Denied::class.java, algorithm.calculate(key,defaultPolicy))
-    assertEquals((defaultPolicy.window.inWholeSeconds.toInt() / defaultPolicy.limit.toInt()).seconds, deny.retryAfter)
+    val deny = assertInstanceOf(Denied::class.java, algorithm.calculate(key, defaultPolicy))
+    assertEquals(
+        (defaultPolicy.window.inWholeSeconds.toInt() / defaultPolicy.limit.toInt()).seconds,
+        deny.retryAfter)
     clock.advance(1.seconds)
-    val result = assertInstanceOf(Allowed::class.java, algorithm.calculate(key,defaultPolicy))
+    val result = assertInstanceOf(Allowed::class.java, algorithm.calculate(key, defaultPolicy))
     assertEquals(0u, result.remaining)
     assertEquals(defaultPolicy.window, result.resetIn)
   }
@@ -85,9 +90,9 @@ class InMemoryTokenBucketTest {
       check(result is Allowed)
       assertEquals(defaultPolicy.limit - (i + 1).toUInt(), result.remaining)
     }
-    assertInstanceOf(Denied::class.java, algorithm.calculate(key,defaultPolicy))
+    assertInstanceOf(Denied::class.java, algorithm.calculate(key, defaultPolicy))
     clock.advance(5.minutes)
-    val result = assertInstanceOf(Allowed::class.java, algorithm.calculate(key,defaultPolicy))
+    val result = assertInstanceOf(Allowed::class.java, algorithm.calculate(key, defaultPolicy))
     assertEquals(defaultPolicy.limit - 1u, result.remaining)
     assertEquals(1.seconds, result.resetIn)
   }
@@ -103,7 +108,7 @@ class InMemoryTokenBucketTest {
       check(result is Allowed)
       assertEquals(defaultPolicy.limit - (i + 1).toUInt(), result.remaining)
     }
-    val result = assertInstanceOf(Denied::class.java, algorithm.calculate(key,defaultPolicy))
+    val result = assertInstanceOf(Denied::class.java, algorithm.calculate(key, defaultPolicy))
     assertEquals(1.seconds, result.retryAfter)
   }
 
@@ -119,28 +124,29 @@ class InMemoryTokenBucketTest {
       assertEquals(defaultPolicy.limit - (i + 1).toUInt(), result.remaining)
     }
     clock.advance(0.5.seconds)
-    val result = assertInstanceOf(Denied::class.java, algorithm.calculate(key,defaultPolicy))
+    val result = assertInstanceOf(Denied::class.java, algorithm.calculate(key, defaultPolicy))
     assertEquals(0.5.seconds, result.retryAfter)
   }
 
   @Test
-  fun `concurrent access - coroutines hammering same key, total allowed equals limit`() = runBlocking {
-    val clock = FakeClock()
-    val algorithm = InMemoryTokenBucket(clock)
-    val key = "test-key"
-    val policy = defaultPolicy.copy(limit = 100u)
-    withContext(Dispatchers.Default) {
-      val threads = List(200) { async { algorithm.calculate(key, policy) } }
-      val result = threads.awaitAll()
-      val (allowed, denied) = result.partition { it is Allowed }
-      assertEquals(
-        100,
-        allowed.size,
-      )
-      assertEquals(
-        100,
-        denied.size,
-      )
-    }
-  }
+  fun `concurrent access - coroutines hammering same key, total allowed equals limit`() =
+      runBlocking {
+        val clock = FakeClock()
+        val algorithm = InMemoryTokenBucket(clock)
+        val key = "test-key"
+        val policy = defaultPolicy.copy(limit = 100u)
+        withContext(Dispatchers.Default) {
+          val threads = List(200) { async { algorithm.calculate(key, policy) } }
+          val result = threads.awaitAll()
+          val (allowed, denied) = result.partition { it is Allowed }
+          assertEquals(
+              100,
+              allowed.size,
+          )
+          assertEquals(
+              100,
+              denied.size,
+          )
+        }
+      }
 }
