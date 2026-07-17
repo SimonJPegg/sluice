@@ -1,5 +1,6 @@
 package org.antipathy.sluice.core.store
 
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.antipathy.sluice.core.algorithm.FakeClock
 import org.antipathy.sluice.core.algorithm.InMemoryFixedWindow
@@ -15,6 +16,7 @@ import org.antipathy.sluice.core.redis.RedisTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Test
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 
 class RedisCounterStoreTest: RedisTest() {
@@ -60,6 +62,21 @@ class RedisCounterStoreTest: RedisTest() {
   fun `store fails closed when the policy specifies it`() = runTest {
     val store =
       RedisCounterStore(mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection))))
+    val testKey = "test-key"
+    val policy = defaultPolicy.copy(failType = FailType.CLOSED)
+    connection.close()
+    val result = assertInstanceOf(Denied::class.java, store.evaluate(testKey, policy))
+
+    assertEquals(defaultPolicy.window, result.retryAfter)
+  }
+
+  @Test
+  fun `store fails according to policy when redis connection times out`() = runBlocking {
+    val store =
+      RedisCounterStore(
+        mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection))),
+        1.milliseconds
+      )
     val testKey = "test-key"
     val policy = defaultPolicy.copy(failType = FailType.CLOSED)
     connection.close()
