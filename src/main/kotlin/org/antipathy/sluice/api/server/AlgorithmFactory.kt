@@ -1,4 +1,4 @@
-package org.antipathy.sluice.api
+package org.antipathy.sluice.api.server
 
 import org.antipathy.sluice.core.algorithm.InMemoryAlgorithm
 import org.antipathy.sluice.core.algorithm.InMemoryFixedWindow

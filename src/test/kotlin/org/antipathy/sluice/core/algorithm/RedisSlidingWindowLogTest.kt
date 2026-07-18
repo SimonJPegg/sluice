@@ -13,7 +13,7 @@ import org.antipathy.sluice.core.model.Denied
 import org.antipathy.sluice.core.policy.AlgorithmType
 import org.antipathy.sluice.core.policy.FailType
 import org.antipathy.sluice.core.policy.Policy
-import org.antipathy.sluice.core.redis.RedisTest
+import org.antipathy.sluice.redis.RedisTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Test

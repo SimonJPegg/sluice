@@ -16,15 +16,17 @@ Currently implemented:
 - Fail-open/fail-closed error handling when Redis is unavailable
 - YAML-based policy registry (loaded at startup, validated, no runtime mutation)
 - Ktor HTTP server with health endpoints (`/health/live`, `/health/ready`)
+- `POST /check` — typed request pipeline (receive → validate → evaluate → respond)
+- Response headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, `Retry-After`
+- Input hardening (regex whitelist, configurable max key length, strict JSON parsing)
 - Correlation ID propagation (X-Request-ID — read or generate, always echoed)
-- YAML application config (Helm-friendly, no HOCON)
+- YAML application config (Helm-friendly)
 
-Coming: rate limit endpoint, metrics, structured logging, Helm chart.
+Coming: metrics, structured logging, Helm chart.
 
 ## Roadmap
 
 ### v1.0.0 (current target)
-- Rate limit endpoint with typed request pipeline
 - Structured logging, Prometheus metrics, dependency health status
 - Helm chart, CI pipeline, container image with SBOM
 
@@ -35,7 +37,6 @@ Coming: rate limit endpoint, metrics, structured logging, Helm chart.
 
 ### v1.2.0 — Security
 - Authentication on `/check` endpoint
-- Input hardening (key length, encoding, injection)
 
 ### v1.3.0 — Confidence
 - Load testing with k6 (published baselines)

@@ -1,17 +1,21 @@
-package org.antipathy.sluice.api
+package org.antipathy.sluice.api.server
 
 import io.ktor.http.HttpHeaders
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationPlugin
 import io.ktor.server.application.ApplicationStopping
 import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.application.hooks.MonitoringEvent
 import io.ktor.server.application.install
+import io.ktor.server.netty.EngineMain
 import io.ktor.server.plugins.callid.CallId
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisException
 import io.lettuce.core.api.StatefulRedisConnection
 import java.util.UUID
+import kotlinx.serialization.json.Json
 import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
 import org.antipathy.sluice.core.policy.YamlPolicyRegistry
 import org.antipathy.sluice.core.store.InMemoryCounterStore
@@ -21,7 +25,7 @@ import org.antipathy.sluice.core.store.RedisCounterStore
 fun main(
     args: Array<String>
 ) { // don't believe the hype, the real entry point is Application.module() below
-  io.ktor.server.netty.EngineMain.main(args)
+  EngineMain.main(args)
 }
 
 /** Creates a plugin to close the redis connection cleanly on shutdown */
@@ -52,6 +56,13 @@ fun Application.module() {
   val policyRegistry =
       YamlPolicyRegistry(environment.config.property("rate-limit.policies.location").getString())
 
+  @Suppress("MagicNumber") // obvious from the context
+  val maxIdentifierLength =
+      environment.config
+          .propertyOrNull("rate-limit.validation.max-identifier-length")
+          ?.getString()
+          ?.toInt() ?: 256
+
   val requiredAlgorithms = policyRegistry.requiredAlgorithms()
   val redisUri = environment.config.propertyOrNull("rate-limit.backend.redis-uri")
   val store =
@@ -65,6 +76,14 @@ fun Application.module() {
         InMemoryCounterStore(requiredAlgorithms.associate { it to inMemoryAlgorithm(it) })
       }
 
+  install(ContentNegotiation) {
+    json(
+        Json {
+          isLenient = false
+          ignoreUnknownKeys = false
+        })
+  }
+
   install(CallId) {
     header(HttpHeaders.XRequestId)
     generate { UUID.randomUUID().toString() }
@@ -72,5 +91,5 @@ fun Application.module() {
   }
 
   healthCheck()
-  rateLimit(store, policyRegistry)
+  rateLimit(store, policyRegistry, maxIdentifierLength)
 }

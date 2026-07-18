@@ -1,4 +1,4 @@
-package org.antipathy.sluice.api
+package org.antipathy.sluice.api.server
 
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -8,10 +8,10 @@ import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.testing.testApplication
 import java.util.UUID
 import kotlin.test.assertTrue
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
-class HealthCheckRouteTest {
+class HealthRouteTest {
 
   @Test
   fun `health liveness endpoint returns OK `() = testApplication {
@@ -19,8 +19,8 @@ class HealthCheckRouteTest {
     application { module() }
     val correlationID = "steve"
     val response = client.get("/health/live") { header(HttpHeaders.XRequestId, correlationID) }
-    assertEquals(HttpStatusCode.OK, response.status)
-    assertEquals(correlationID, response.headers[HttpHeaders.XRequestId])
+    Assertions.assertEquals(HttpStatusCode.OK, response.status)
+    Assertions.assertEquals(correlationID, response.headers[HttpHeaders.XRequestId])
   }
 
   @Test
@@ -28,7 +28,7 @@ class HealthCheckRouteTest {
     environment { config = ApplicationConfig("src/test/resources/api/valid/simple.yaml") }
     application { module() }
     val response = client.get("/health/ready")
-    assertEquals(HttpStatusCode.OK, response.status)
+    Assertions.assertEquals(HttpStatusCode.OK, response.status)
     assertTrue {
       try {
         UUID.fromString(response.headers[HttpHeaders.XRequestId])

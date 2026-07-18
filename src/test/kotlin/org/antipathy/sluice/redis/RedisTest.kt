@@ -1,4 +1,4 @@
-package org.antipathy.sluice.core.redis
+package org.antipathy.sluice.redis
 
 import com.redis.testcontainers.RedisContainer
 import io.lettuce.core.RedisClient

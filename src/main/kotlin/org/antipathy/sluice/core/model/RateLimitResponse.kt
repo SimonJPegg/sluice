@@ -20,9 +20,3 @@ data class Denied(
 data class Failed(
     val reason: String,
 ) : RateLimitResponse
-
-/** The minimum input needed to make a decision. */
-data class RateLimitRequest(
-    val key: String,
-    val policyID: String,
-)
