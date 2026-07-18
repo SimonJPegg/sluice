@@ -1,0 +1,10 @@
+ktor:
+  deployment:
+    port: 8080
+# Steering doc says we load **explicitly** in the tests
+#  application:
+#    modules:
+#      - org.antipathy.sluice.api.ApplicationKt.module
+rate-limit:
+  policies:
+    location: src/test/resources/policy/valid
