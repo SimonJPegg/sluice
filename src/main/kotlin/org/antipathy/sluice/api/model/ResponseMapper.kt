@@ -1,20 +1,9 @@
-package org.antipathy.sluice.api.server
+package org.antipathy.sluice.api.model
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
-import org.antipathy.sluice.api.model.AllowedRequest
-import org.antipathy.sluice.api.model.DeniedRequest
-import org.antipathy.sluice.api.model.ErrorResponse
-import org.antipathy.sluice.api.model.FailedRequest
-import org.antipathy.sluice.api.model.InvalidKeyRequest
-import org.antipathy.sluice.api.model.InvalidPolicyRequest
-import org.antipathy.sluice.api.model.MissingKeyRequest
-import org.antipathy.sluice.api.model.MissingPolicyRequest
-import org.antipathy.sluice.api.model.PolicyNotFoundRequest
-import org.antipathy.sluice.api.model.ProcessedRequest
-import org.antipathy.sluice.api.model.RequestWithError
 import org.antipathy.sluice.core.model.Allowed
 import org.antipathy.sluice.core.model.Denied
 import org.antipathy.sluice.core.model.Failed

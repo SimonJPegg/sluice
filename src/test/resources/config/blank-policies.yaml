@@ -1,0 +1,3 @@
+rate-limit:
+  policies:
+    location: ""

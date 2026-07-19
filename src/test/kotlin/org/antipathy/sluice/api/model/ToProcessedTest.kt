@@ -1,10 +1,7 @@
-package org.antipathy.sluice.api.server
+package org.antipathy.sluice.api.model
 
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
-import org.antipathy.sluice.api.model.AllowedRequest
-import org.antipathy.sluice.api.model.DeniedRequest
-import org.antipathy.sluice.api.model.FailedRequest
 import org.antipathy.sluice.core.model.Allowed
 import org.antipathy.sluice.core.model.Denied
 import org.antipathy.sluice.core.model.Failed

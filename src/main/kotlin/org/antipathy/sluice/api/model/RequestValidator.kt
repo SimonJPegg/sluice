@@ -1,13 +1,5 @@
-package org.antipathy.sluice.api.server
+package org.antipathy.sluice.api.model
 
-import org.antipathy.sluice.api.model.InvalidKeyRequest
-import org.antipathy.sluice.api.model.InvalidPolicyRequest
-import org.antipathy.sluice.api.model.MissingKeyRequest
-import org.antipathy.sluice.api.model.MissingPolicyRequest
-import org.antipathy.sluice.api.model.PolicyNotFoundRequest
-import org.antipathy.sluice.api.model.RateLimitRequest
-import org.antipathy.sluice.api.model.ValidRequest
-import org.antipathy.sluice.api.model.ValidationResult
 import org.antipathy.sluice.core.policy.PolicyRegistry
 
 /**
@@ -17,6 +9,7 @@ import org.antipathy.sluice.core.policy.PolicyRegistry
 private val identifierPattern = Regex("^[a-zA-Z0-9\\-_:]+$")
 
 /** Validates and resolves a raw request into either a valid request or a specific error. */
+@Suppress("CyclomaticComplexMethod") // linear chain, each branch is independent
 fun RateLimitRequest.validate(
     policyRegistry: PolicyRegistry,
     maxIdentifierLength: Int

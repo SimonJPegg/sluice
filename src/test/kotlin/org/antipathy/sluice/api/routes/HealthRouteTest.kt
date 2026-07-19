@@ -1,4 +1,4 @@
-package org.antipathy.sluice.api.server
+package org.antipathy.sluice.api.routes
 
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -8,6 +8,7 @@ import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.testing.testApplication
 import java.util.UUID
 import kotlin.test.assertTrue
+import org.antipathy.sluice.api.server.module
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 

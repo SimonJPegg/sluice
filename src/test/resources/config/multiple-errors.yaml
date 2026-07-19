@@ -1,0 +1,5 @@
+rate-limit:
+  backend:
+    redis-uri: "not-a-valid-uri"
+  validation:
+    max-identifier-length: -1

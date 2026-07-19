@@ -1,0 +1,7 @@
+rate-limit:
+  backend:
+    redis-uri: "redis://localhost:6379"
+  policies:
+    location: src/test/resources/policy/valid
+  validation:
+    max-identifier-length: 128

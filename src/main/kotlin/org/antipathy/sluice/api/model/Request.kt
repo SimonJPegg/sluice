@@ -51,6 +51,3 @@ data class AllowedRequest(val remaining: Int, val limit: Int, val resetIn: Durat
 
 /** Internal error during evaluation. */
 @Serializable data class FailedRequest(val reason: String) : ProcessedRequest
-
-/** Consistent JSON error body shape for all error responses. */
-@Serializable data class ErrorResponse(val error: String)

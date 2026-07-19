@@ -1,0 +1,39 @@
+<configuration>
+  <!-- Console: structured JSON for production, plain for local dev via LOGBACK_PROFILE -->
+  <variable name="LOG_LEVEL" value="${SLUICE_LOG_LEVEL:-ERROR}" />
+
+  <!-- JSON structured output for production -->
+  <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="ch.qos.logback.classic.encoder.JsonEncoder" />
+  </appender>
+
+  <!-- Plain text for local development -->
+  <appender name="PLAIN_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <!-- Rolling file for container environments where you want to cap disk usage -->
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>logs/sluice.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+      <fileNamePattern>logs/sluice.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+      <maxFileSize>50MB</maxFileSize>
+      <maxHistory>7</maxHistory>
+      <totalSizeCap>500MB</totalSizeCap>
+    </rollingPolicy>
+    <encoder class="ch.qos.logback.classic.encoder.JsonEncoder" />
+  </appender>
+
+  <!-- Suppress noisy frameworks at info and below -->
+  <logger name="io.ktor" level="WARN" />
+  <logger name="io.lettuce" level="WARN" />
+  <logger name="io.netty" level="WARN" />
+  <logger name="io.micrometer" level="WARN" />
+
+  <root level="${LOG_LEVEL}">
+    <appender-ref ref="JSON_CONSOLE" />
+    <appender-ref ref="FILE" />
+  </root>
+</configuration>

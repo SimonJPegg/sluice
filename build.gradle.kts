@@ -25,6 +25,7 @@ dependencies {
   implementation(libs.lettuce.core)
   implementation(libs.yamlkt)
   implementation(libs.kotlinx.serialization.json)
+  implementation(libs.micrometer.registry.prometheus)
 
   /* Test */
   testImplementation(kotlin("test"))

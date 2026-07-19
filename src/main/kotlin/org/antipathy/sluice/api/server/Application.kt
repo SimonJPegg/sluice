@@ -8,18 +8,46 @@ import io.ktor.server.application.ApplicationStopping
 import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.application.hooks.MonitoringEvent
 import io.ktor.server.application.install
+import io.ktor.server.metrics.micrometer.MicrometerMetrics
 import io.ktor.server.netty.EngineMain
 import io.ktor.server.plugins.callid.CallId
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisException
 import io.lettuce.core.api.StatefulRedisConnection
+import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
+import io.micrometer.core.instrument.binder.system.ProcessorMetrics
+import io.micrometer.prometheusmetrics.PrometheusConfig
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import java.util.UUID
+import kotlin.time.Clock
+import kotlin.time.TimeSource
+import kotlinx.coroutines.future.await
 import kotlinx.serialization.json.Json
+import org.antipathy.sluice.api.config.SluiceConfiguration
+import org.antipathy.sluice.api.health.PolicyStatus
+import org.antipathy.sluice.api.health.StatusChecker
+import org.antipathy.sluice.api.health.StoreStatus
+import org.antipathy.sluice.api.metrics.Metrics
+import org.antipathy.sluice.api.metrics.PrometheusMetrics
+import org.antipathy.sluice.api.model.PolicyContext
+import org.antipathy.sluice.api.routes.healthCheck
+import org.antipathy.sluice.api.routes.metrics
+import org.antipathy.sluice.api.routes.rateLimit
+import org.antipathy.sluice.api.store.InstrumentedCounterStore
+import org.antipathy.sluice.core.algorithm.inMemoryAlgorithm
 import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
+import org.antipathy.sluice.core.algorithm.redisAlgorithm
+import org.antipathy.sluice.core.exceptions.RedisScriptMissingException
 import org.antipathy.sluice.core.policy.YamlPolicyRegistry
+import org.antipathy.sluice.core.store.CounterStore
 import org.antipathy.sluice.core.store.InMemoryCounterStore
 import org.antipathy.sluice.core.store.RedisCounterStore
+import org.slf4j.LoggerFactory
+
+private val logger = LoggerFactory.getLogger("org.antipathy.sluice.api.server.Application")
 
 /** Ktor EngineMain entry point. Config-driven module loading via application.yaml. */
 fun main(
@@ -29,52 +57,94 @@ fun main(
 }
 
 /** Creates a plugin to close the redis connection cleanly on shutdown */
-fun createRedisCleanUpPlugin(
+internal fun createRedisCleanUpPlugin(
     client: RedisClient,
     connection: StatefulRedisConnection<String, String>
 ): ApplicationPlugin<Unit> {
   return createApplicationPlugin("RedisCleanupPlugin") {
     on(MonitoringEvent(ApplicationStopping)) {
-      // TODO: Replace with structured logging
       // We're shutting down here, the connection is going either way.
       try {
         connection.close()
       } catch (e: RedisException) {
-        e.printStackTrace()
+        logger.error("Error closing connection", e)
       }
       try {
         client.close()
       } catch (e: RedisException) {
-        e.printStackTrace()
+        logger.error("Error closing client", e)
       }
     }
   }
 }
 
+/** Builds a Redis-backed store and status checker. Registers cleanup via the provided installer. */
+internal fun redisStore(
+    redisUri: String,
+    policyContext: PolicyContext,
+    metrics: Metrics,
+    installPlugin: (ApplicationPlugin<Unit>) -> Unit
+): Pair<CounterStore, StatusChecker> {
+
+  val client = RedisClient.create(redisUri)
+  val connection = client.connect()
+  installPlugin(createRedisCleanUpPlugin(client, connection))
+
+  val scriptLoader = ScriptLoader(connection)
+  val algorithms =
+      policyContext.requiredAlgorithms.associate { algorithmType ->
+        try {
+          algorithmType to redisAlgorithm(algorithmType, scriptLoader)
+        } catch (e: RedisScriptMissingException) {
+          metrics.trackLuaScriptLoadFailure(algorithmType.name)
+          logger.error("Error script loading failed: $algorithmType", e)
+          throw e
+        }
+      }
+  val statusChecker =
+      StatusChecker(
+          PolicyStatus(policyContext.allPolicies.size, policyContext.policiesLoaded.toString())) {
+            try {
+              val start = TimeSource.Monotonic.markNow()
+              connection.async().ping().await()
+              StoreStatus(
+                  type = "redis",
+                  status = StoreStatus.HEALTHY,
+                  latencyMS = start.elapsedNow().inWholeMilliseconds)
+            } catch (_: RedisException) {
+              StoreStatus(
+                  type = "redis",
+                  status = StoreStatus.FAILED,
+                  latencyMS = 0,
+              )
+            }
+          }
+
+  return Pair(RedisCounterStore(algorithms), statusChecker)
+}
+
+/** Builds an in-memory store and status checker. No external dependencies, always healthy. */
+internal fun inMemoryStore(policyContext: PolicyContext): Pair<CounterStore, StatusChecker> {
+  logger.info("No Redis connection found, loading InMemoryCounterStore")
+  val statusChecker =
+      StatusChecker(
+          PolicyStatus(policyContext.allPolicies.size, policyContext.policiesLoaded.toString())) {
+            StoreStatus(
+                type = "in memory",
+                status = StoreStatus.HEALTHY,
+                latencyMS = 0,
+            )
+          }
+  val store =
+      InMemoryCounterStore(
+          policyContext.requiredAlgorithms.associate { it to inMemoryAlgorithm(it) })
+  return Pair(store, statusChecker)
+}
+
 /** Composition root. Reads config, builds dependencies, installs plugins, mounts routes. */
 fun Application.module() {
-  val policyRegistry =
-      YamlPolicyRegistry(environment.config.property("rate-limit.policies.location").getString())
 
-  @Suppress("MagicNumber") // obvious from the context
-  val maxIdentifierLength =
-      environment.config
-          .propertyOrNull("rate-limit.validation.max-identifier-length")
-          ?.getString()
-          ?.toInt() ?: 256
-
-  val requiredAlgorithms = policyRegistry.requiredAlgorithms()
-  val redisUri = environment.config.propertyOrNull("rate-limit.backend.redis-uri")
-  val store =
-      if (redisUri != null) {
-        val client = RedisClient.create(redisUri.getString())
-        val connection = client.connect()
-        install(createRedisCleanUpPlugin(client, connection))
-        val scriptLoader = ScriptLoader(connection)
-        RedisCounterStore(requiredAlgorithms.associate { it to redisAlgorithm(it, scriptLoader) })
-      } else {
-        InMemoryCounterStore(requiredAlgorithms.associate { it to inMemoryAlgorithm(it) })
-      }
+  val config = SluiceConfiguration.from(environment.config)
 
   install(ContentNegotiation) {
     json(
@@ -83,13 +153,41 @@ fun Application.module() {
           ignoreUnknownKeys = false
         })
   }
-
   install(CallId) {
     header(HttpHeaders.XRequestId)
     generate { UUID.randomUUID().toString() }
     replyToHeader(HttpHeaders.XRequestId)
   }
 
-  healthCheck()
-  rateLimit(store, policyRegistry, maxIdentifierLength)
+  val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+  val metrics = PrometheusMetrics(appMicrometerRegistry)
+  install(MicrometerMetrics) {
+    registry = appMicrometerRegistry
+    meterBinders =
+        listOf(JvmMemoryMetrics(), JvmGcMetrics(), JvmThreadMetrics(), ProcessorMetrics())
+  }
+
+  val policyRegistry = YamlPolicyRegistry(config.policiesLocation)
+
+  val policyContext =
+      PolicyContext(policyRegistry.requiredAlgorithms(), Clock.System.now(), policyRegistry.all())
+
+  policyContext.allPolicies.forEach { policy ->
+    metrics.trackPolicyLoaded(policy, policyContext.policiesLoaded)
+  }
+  logger.info(
+      "Loaded {} policies and {} algorithms",
+      policyContext.allPolicies.size,
+      policyContext.requiredAlgorithms.size)
+  val (store, statusChecker) =
+      if (config.redisUrl != null) {
+        redisStore(config.redisUrl, policyContext, metrics) { plugin -> install(plugin) }
+      } else {
+        inMemoryStore(policyContext)
+      }
+
+  healthCheck(statusChecker)
+  rateLimit(
+      InstrumentedCounterStore(store, metrics), policyRegistry, config.maxIdentifierLength, metrics)
+  metrics { appMicrometerRegistry.scrape() }
 }

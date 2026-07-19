@@ -15,19 +15,22 @@ Currently implemented:
 - Concurrent access tested and proven (ConcurrentHashMap.compute + Redis atomicity)
 - Fail-open/fail-closed error handling when Redis is unavailable
 - YAML-based policy registry (loaded at startup, validated, no runtime mutation)
-- Ktor HTTP server with health endpoints (`/health/live`, `/health/ready`)
+- Ktor HTTP server with health endpoints (`/health/live`, `/health/ready`, `/health/status`)
 - `POST /check` — typed request pipeline (receive → validate → evaluate → respond)
 - Response headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, `Retry-After`
 - Input hardening (regex whitelist, configurable max key length, strict JSON parsing)
 - Correlation ID propagation (X-Request-ID — read or generate, always echoed)
-- YAML application config (Helm-friendly)
+- YAML application config (validated at startup, Helm-friendly)
+- Prometheus metrics (`/metrics`) — request outcomes, latency, validation errors, store health
+- Structured logging (logback, JSON format, env-configurable level)
+- Dependency status endpoint (`/health/status`) — live Redis ping with latency
+- Config validation at startup (missing fields, invalid URIs, bad values — all reported before failing)
 
-Coming: metrics, structured logging, Helm chart.
+Coming: Helm chart, CI pipeline, container image.
 
 ## Roadmap
 
 ### v1.0.0 (current target)
-- Structured logging, Prometheus metrics, dependency health status
 - Helm chart, CI pipeline, container image with SBOM
 
 ### v1.1.0 — Resilience

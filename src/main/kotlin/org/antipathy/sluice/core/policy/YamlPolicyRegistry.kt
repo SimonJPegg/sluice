@@ -66,4 +66,8 @@ class YamlPolicyRegistry(private val policyDirectory: String) : PolicyRegistry {
   override fun requiredAlgorithms(): Set<AlgorithmType> {
     return policyRegistry.values.map { it.algorithmType }.toSet()
   }
+
+  override fun all(): Set<Policy> {
+    return policyRegistry.values.toSet()
+  }
 }

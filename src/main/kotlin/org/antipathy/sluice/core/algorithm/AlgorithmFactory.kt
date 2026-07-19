@@ -1,15 +1,5 @@
-package org.antipathy.sluice.api.server
+package org.antipathy.sluice.core.algorithm
 
-import org.antipathy.sluice.core.algorithm.InMemoryAlgorithm
-import org.antipathy.sluice.core.algorithm.InMemoryFixedWindow
-import org.antipathy.sluice.core.algorithm.InMemorySlidingWindowCounter
-import org.antipathy.sluice.core.algorithm.InMemorySlidingWindowLog
-import org.antipathy.sluice.core.algorithm.InMemoryTokenBucket
-import org.antipathy.sluice.core.algorithm.RedisAlgorithm
-import org.antipathy.sluice.core.algorithm.RedisFixedWindow
-import org.antipathy.sluice.core.algorithm.RedisSlidingWindowCounter
-import org.antipathy.sluice.core.algorithm.RedisSlidingWindowLog
-import org.antipathy.sluice.core.algorithm.RedisTokenBucket
 import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
 import org.antipathy.sluice.core.policy.AlgorithmType
 

@@ -1,0 +1,5 @@
+rate-limit:
+  backend:
+    redis-uri: "not-a-valid-uri"
+  policies:
+    location: src/test/resources/policy/valid

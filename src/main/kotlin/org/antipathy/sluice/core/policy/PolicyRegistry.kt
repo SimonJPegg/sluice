@@ -4,5 +4,7 @@ package org.antipathy.sluice.core.policy
 interface PolicyRegistry {
   fun get(policyId: String): Policy?
 
+  fun all(): Set<Policy>
+
   fun requiredAlgorithms(): Set<AlgorithmType>
 }

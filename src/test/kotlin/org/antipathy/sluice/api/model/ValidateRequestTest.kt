@@ -1,14 +1,7 @@
-package org.antipathy.sluice.api.server
+package org.antipathy.sluice.api.model
 
 import io.mockk.every
 import io.mockk.mockk
-import org.antipathy.sluice.api.model.InvalidKeyRequest
-import org.antipathy.sluice.api.model.InvalidPolicyRequest
-import org.antipathy.sluice.api.model.MissingKeyRequest
-import org.antipathy.sluice.api.model.MissingPolicyRequest
-import org.antipathy.sluice.api.model.PolicyNotFoundRequest
-import org.antipathy.sluice.api.model.RateLimitRequest
-import org.antipathy.sluice.api.model.ValidRequest
 import org.antipathy.sluice.core.policy.Policy
 import org.antipathy.sluice.core.policy.PolicyRegistry
 import org.junit.jupiter.api.Test
