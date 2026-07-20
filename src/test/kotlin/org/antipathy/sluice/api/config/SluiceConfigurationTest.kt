@@ -4,8 +4,10 @@ import io.ktor.server.config.ApplicationConfig
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 import org.antipathy.sluice.api.exceptions.ConfigurationException
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertInstanceOf
 import org.junit.jupiter.api.assertThrows
 
 class SluiceConfigurationTest {
@@ -38,6 +40,16 @@ class SluiceConfigurationTest {
     val result = SluiceConfiguration.from(config)
 
     assertEquals(256, result.maxIdentifierLength)
+  }
+
+  @Test
+  fun `should have a circuit breaker config when specified correctly`() {
+    val config = ApplicationConfig("src/test/resources/config/circuit-breaker-set.yaml")
+
+    val result = assertInstanceOf<CircuitBreaker>(SluiceConfiguration.from(config).circuitBreaker)
+
+    assertEquals(5, result.failureThreshold)
+    assertEquals(30.seconds, result.resetTimeout)
   }
 
   @Test
@@ -86,6 +98,26 @@ class SluiceConfigurationTest {
 
     val exception = assertThrows<ConfigurationException> { SluiceConfiguration.from(config) }
     assertTrue(exception.message!!.contains("max identifier length"))
+  }
+
+  @Test
+  fun `should throw when circuit breaker settings are not complete`() {
+    val config = ApplicationConfig("src/test/resources/config/circuit-breaker-half-set.yaml")
+
+    val exception = assertThrows<ConfigurationException> { SluiceConfiguration.from(config) }
+    assertTrue(
+        exception.message!!.contains(
+            "rate-limit.circuit-breaker requires both failure-threshold and timeout-ms, or neither"))
+  }
+
+  @Test
+  fun `should throw when circuit breaker settings are incorrect types`() {
+    val config = ApplicationConfig("src/test/resources/config/circuit-breaker-is-wrong.yaml")
+
+    val exception = assertThrows<ConfigurationException> { SluiceConfiguration.from(config) }
+    assertTrue(
+        exception.message!!.contains(
+            "rate-limit.circuit-breaker.threshold must be a valid integer, got: 'Skyrim belongs to the Nords'"))
   }
 
   @Test

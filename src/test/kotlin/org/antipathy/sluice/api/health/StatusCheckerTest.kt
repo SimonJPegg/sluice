@@ -1,8 +1,8 @@
 package org.antipathy.sluice.api.health
 
+import kotlin.test.assertEquals
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
 
 class StatusCheckerTest {
 
@@ -20,9 +20,7 @@ class StatusCheckerTest {
 
   @Test
   fun `should return connected redis status when ping succeeds`() = runTest {
-    val checker = StatusChecker(policyStatus) {
-      StoreStatus("Redis", StoreStatus.HEALTHY, 2)
-    }
+    val checker = StatusChecker(policyStatus) { StoreStatus("Redis", StoreStatus.HEALTHY, 2) }
 
     val result = checker.status()
 
@@ -33,9 +31,7 @@ class StatusCheckerTest {
 
   @Test
   fun `should return failed redis status when ping throws`() = runTest {
-    val checker = StatusChecker(policyStatus) {
-      StoreStatus("Redis", StoreStatus.FAILED, 0)
-    }
+    val checker = StatusChecker(policyStatus) { StoreStatus("Redis", StoreStatus.FAILED, 0) }
 
     val result = checker.status()
 

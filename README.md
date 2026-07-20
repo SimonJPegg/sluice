@@ -34,7 +34,6 @@ Coming: Helm chart, CI pipeline, container image.
 - Helm chart, CI pipeline, container image with SBOM
 
 ### v1.1.0 — Resilience
-- Circuit breaker on Redis
 - Connection pooling
 - Backpressure / load shedding under degraded Redis
 

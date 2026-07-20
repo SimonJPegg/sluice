@@ -4,14 +4,22 @@ import io.ktor.server.config.ApplicationConfig
 import io.lettuce.core.RedisURI
 import java.nio.file.Paths
 import kotlin.io.path.exists
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import org.antipathy.sluice.api.exceptions.ConfigurationException
 import org.slf4j.LoggerFactory
+
+data class CircuitBreaker(
+    val failureThreshold: Int,
+    val resetTimeout: Duration,
+)
 
 /** Minimal required config for sluice */
 data class SluiceConfiguration(
     val policiesLocation: String,
     val redisUrl: String?,
-    val maxIdentifierLength: Int = 256
+    val maxIdentifierLength: Int = 256,
+    val circuitBreaker: CircuitBreaker?,
 ) {
 
   companion object {
@@ -27,6 +35,30 @@ data class SluiceConfiguration(
               ?: DEFAULT_MAX_IDENTIFIER_LENGTH
       val policiesLocation =
           config.propertyOrNull("rate-limit.policies.location")?.getString() ?: ""
+
+      val rawThreshold = config.propertyOrNull("rate-limit.circuit-breaker.threshold")?.getString()
+      val rawTimeout = config.propertyOrNull("rate-limit.circuit-breaker.timeout-ms")?.getString()
+
+      val threshold =
+          rawThreshold?.let {
+            it.toIntOrNull()
+                ?: throw ConfigurationException(
+                    "rate-limit.circuit-breaker.threshold must be a valid integer, got: '$it'")
+          }
+      val timeout =
+          rawTimeout?.let {
+            it.toIntOrNull()
+                ?: throw ConfigurationException(
+                    "rate-limit.circuit-breaker.timeout-ms must be a valid integer, got: '$it'")
+          }
+      val circuitBreaker =
+          when {
+            threshold != null && timeout != null -> CircuitBreaker(threshold, timeout.milliseconds)
+            threshold == null && timeout == null -> null
+            else ->
+                throw ConfigurationException(
+                    "rate-limit.circuit-breaker requires both failure-threshold and timeout-ms, or neither")
+          }
 
       if (maxIdentifierLength < 1) {
         exceptions.add(ConfigurationException("max identifier length must be greater than 1"))
@@ -56,7 +88,7 @@ data class SluiceConfiguration(
         throw primary
       }
 
-      return SluiceConfiguration(policiesLocation, redisUrl, maxIdentifierLength)
+      return SluiceConfiguration(policiesLocation, redisUrl, maxIdentifierLength, circuitBreaker)
     }
   }
 }

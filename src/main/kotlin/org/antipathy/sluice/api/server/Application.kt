@@ -42,6 +42,7 @@ import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
 import org.antipathy.sluice.core.algorithm.redisAlgorithm
 import org.antipathy.sluice.core.exceptions.RedisScriptMissingException
 import org.antipathy.sluice.core.policy.YamlPolicyRegistry
+import org.antipathy.sluice.core.store.CircuitBreakerCounterStore
 import org.antipathy.sluice.core.store.CounterStore
 import org.antipathy.sluice.core.store.InMemoryCounterStore
 import org.antipathy.sluice.core.store.RedisCounterStore
@@ -186,8 +187,17 @@ fun Application.module() {
         inMemoryStore(policyContext)
       }
 
+  val instrumentedCounterStore =
+      if (config.circuitBreaker != null) {
+        InstrumentedCounterStore(
+            CircuitBreakerCounterStore(
+                store, config.circuitBreaker.failureThreshold, config.circuitBreaker.resetTimeout),
+            metrics)
+      } else {
+        InstrumentedCounterStore(store, metrics)
+      }
+
   healthCheck(statusChecker)
-  rateLimit(
-      InstrumentedCounterStore(store, metrics), policyRegistry, config.maxIdentifierLength, metrics)
+  rateLimit(instrumentedCounterStore, policyRegistry, config.maxIdentifierLength, metrics)
   metrics { appMicrometerRegistry.scrape() }
 }

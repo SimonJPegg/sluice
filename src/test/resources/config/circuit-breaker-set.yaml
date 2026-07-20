@@ -1,6 +1,6 @@
-ktor:
-  deployment:
-    port: 8080
 rate-limit:
   policies:
     location: src/test/resources/policy/valid
+  circuit-breaker:
+    threshold: 5
+    timeout-ms: 30000
