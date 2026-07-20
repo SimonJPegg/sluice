@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "sluice.fullname" . }}-test
+  labels:
+    {{- include "sluice.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: liveness
+      image: busybox
+      command: ['wget', '--spider', '-q', 'http://{{ include "sluice.fullname" . }}:{{ .Values.service.port }}/health/live']
+    - name: readiness
+      image: busybox
+      command: ['wget', '--spider', '-q', 'http://{{ include "sluice.fullname" . }}:{{ .Values.service.port }}/health/ready']
+  restartPolicy: Never

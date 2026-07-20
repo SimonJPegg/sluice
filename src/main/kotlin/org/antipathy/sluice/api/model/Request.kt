@@ -11,7 +11,7 @@ sealed interface Request
 @Serializable
 data class RateLimitRequest(
     val key: String,
-    val policyID: String,
+    val policyId: String,
 ) : Request
 
 /** Output of the validation step. Either valid or an error — forces exhaustive handling. */

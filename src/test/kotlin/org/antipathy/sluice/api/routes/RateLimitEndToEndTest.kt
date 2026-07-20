@@ -74,7 +74,7 @@ class RateLimitEndToEndTest : RedisTest() {
             client.post("/check") {
               header(HttpHeaders.XRequestId, correlationID)
               contentType(ContentType.Application.Json)
-              setBody("""{"key":"some-key","policyID":"api-global"}""")
+              setBody("""{"key":"some-key","policyId":"api-global"}""")
             }
         Assertions.assertEquals(HttpStatusCode.OK, response.status)
         Assertions.assertEquals(correlationID, response.headers[HttpHeaders.XRequestId])
@@ -95,7 +95,7 @@ class RateLimitEndToEndTest : RedisTest() {
       client.post("/check") {
         header(HttpHeaders.XRequestId, correlationID)
         contentType(ContentType.Application.Json)
-        setBody("""{"key":"some-other-key","policyID":"api-global"}""")
+        setBody("""{"key":"some-other-key","policyId":"api-global"}""")
       }
     }
 
@@ -103,7 +103,7 @@ class RateLimitEndToEndTest : RedisTest() {
         client.post("/check") {
           header(HttpHeaders.XRequestId, correlationID)
           contentType(ContentType.Application.Json)
-          setBody("""{"key":"some-other-key","policyID":"api-global"}""")
+          setBody("""{"key":"some-other-key","policyId":"api-global"}""")
         }
     Assertions.assertEquals(HttpStatusCode.TooManyRequests, response.status)
     Assertions.assertEquals(correlationID, response.headers[HttpHeaders.XRequestId])

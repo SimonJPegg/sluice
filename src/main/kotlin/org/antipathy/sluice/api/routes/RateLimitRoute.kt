@@ -41,7 +41,7 @@ fun Application.rateLimit(
             logger.error("Invalid request body: call.request.toString()", e)
             return@post
           }
-      logger.debug("Evaluating key={} policy={}", request.key, request.policyID)
+      logger.debug("Evaluating key={} policy={}", request.key, request.policyId)
       when (val result = request.validate(policyRegistry, maxIdentifierLength)) {
         is RequestWithError -> {
           result.toResponse()(call)

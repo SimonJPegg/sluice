@@ -1,0 +1,106 @@
+replicaCount: 1
+
+image:
+  # -- Container image repository
+  repository: ghcr.io/SimonJPegg/sluice
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+  # -- Overrides the image tag (defaults to appVersion)
+  tag: ""
+
+service:
+  # -- Service type
+  type: ClusterIP
+  # -- Service port
+  port: 8080
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# -- Liveness probe configuration
+livenessProbe:
+  httpGet:
+    path: /health/live
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+# -- Readiness probe configuration
+readinessProbe:
+  httpGet:
+    path: /health/ready
+    port: http
+  initialDelaySeconds: 15
+  periodSeconds: 5
+
+# -- Rate limit configuration
+rateLimiting:
+  # -- Max identifier length for key validation
+  maxIdentifierLength: 256
+  # -- Circuit breaker configuration
+  circuitBreaker:
+    # -- Enable circuit breaker on the counter store
+    enabled: false
+    # -- Number of consecutive failures before the circuit opens
+    errorThreshold: 5
+    # -- Time in milliseconds before a half-open probe is attempted
+    timeoutMs: 30000
+
+# -- Policies to load (each key becomes a YAML file in the ConfigMap)
+policies:
+  examples.yaml: |
+    policies:
+      - id: fixed-window-example
+        limit: 100
+        window: "PT1M"
+        algorithmType: fixed_window
+        failType: open
+
+      - id: sliding-window-counter-example
+        limit: 50
+        window: "PT1M"
+        algorithmType: sliding_window_counter
+        failType: open
+
+      - id: sliding-window-log-example
+        limit: 10
+        window: "PT5M"
+        algorithmType: sliding_window_log
+        failType: closed
+
+      - id: token-bucket-example
+        limit: 20
+        window: "PT1S"
+        algorithmType: token_bucket
+        failType: open
+
+# -- Redis configuration
+redis:
+  # -- Enable bundled Redis deployment
+  enabled: true
+  # -- Redis image
+  image: redis:8-alpine
+  # -- Redis port
+  port: 6379
+  # -- Redis resource limits
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# -- Prometheus ServiceMonitor
+serviceMonitor:
+  # -- Enable ServiceMonitor (requires prometheus-operator CRDs)
+  enabled: false
+  # -- Scrape interval
+  interval: 15s
+  # -- Additional labels for ServiceMonitor discovery
+  labels: {}

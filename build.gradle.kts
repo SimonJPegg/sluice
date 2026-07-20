@@ -3,9 +3,12 @@ import io.gitlab.arturbosch.detekt.Detekt
 plugins {
   alias(libs.plugins.kotlin.jvm)
   alias(libs.plugins.kotlin.serialization)
+  alias(libs.plugins.ktor)
   alias(libs.plugins.ktfmt)
   alias(libs.plugins.detekt)
 }
+
+application { mainClass.set("org.antipathy.sluice.api.server.ApplicationKt") }
 
 group = "org.antipathy"
 

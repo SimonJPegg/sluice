@@ -16,17 +16,17 @@ fun RateLimitRequest.validate(
 ): ValidationResult =
     when {
       key.isBlank() -> MissingKeyRequest()
-      policyID.isBlank() -> MissingPolicyRequest()
+      policyId.isBlank() -> MissingPolicyRequest()
       !key.matches(identifierPattern) ->
           InvalidKeyRequest("Key does not match '${identifierPattern}'")
-      !policyID.matches(identifierPattern) ->
+      !policyId.matches(identifierPattern) ->
           InvalidPolicyRequest("Policy ID does not match '${identifierPattern}'")
       key.length > maxIdentifierLength ->
           InvalidKeyRequest("Key length must not exceed $maxIdentifierLength")
-      policyID.length > maxIdentifierLength ->
+      policyId.length > maxIdentifierLength ->
           InvalidPolicyRequest("Policy ID length must not exceed $maxIdentifierLength")
 
       else ->
-          policyRegistry.get(policyID)?.let { ValidRequest(key, it) }
-              ?: PolicyNotFoundRequest(policyID)
+          policyRegistry.get(policyId)?.let { ValidRequest(key, it) }
+              ?: PolicyNotFoundRequest(policyId)
     }

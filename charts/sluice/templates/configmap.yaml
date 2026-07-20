@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sluice.fullname" . }}-policies
+  labels:
+    {{- include "sluice.labels" . | nindent 4 }}
+data:
+  {{- range $filename, $content := .Values.policies }}
+  {{ $filename }}: |
+    {{- $content | nindent 4 }}
+  {{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sluice.fullname" . }}-config
+  labels:
+    {{- include "sluice.labels" . | nindent 4 }}
+data:
+  application.yaml: |
+    ktor:
+      deployment:
+        port: 8080
+      application:
+        modules:
+          - org.antipathy.sluice.api.server.ApplicationKt.module
+    rate-limit:
+      policies:
+        location: /app/policies
+      backend:
+        redis-uri: redis://{{ include "sluice.fullname" . }}-redis:{{ .Values.redis.port }}
+      {{- if .Values.rateLimiting.circuitBreaker.enabled }}
+      circuit-breaker:
+        threshold: {{ .Values.rateLimiting.circuitBreaker.errorThreshold }}
+        timeout-ms: {{ .Values.rateLimiting.circuitBreaker.timeoutMs }}
+      {{- end }}
+      {{- if .Values.rateLimiting.maxIdentifierLength }}
+      validation:
+        max-identifier-length: {{ .Values.rateLimiting.maxIdentifierLength }}
+      {{- end }}

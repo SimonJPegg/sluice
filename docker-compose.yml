@@ -1,0 +1,21 @@
+services:
+  sluice:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./examples/policies:/app/policies
+      - ./examples/application.yaml:/app/config/application.yaml
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3

@@ -12,9 +12,11 @@ import org.antipathy.sluice.core.policy.FailType
 import org.antipathy.sluice.core.policy.Policy
 import org.slf4j.LoggerFactory
 
-/** Wraps a CounterStore and stops calling it when failures exceed a threshold.
+/**
+ * Wraps a CounterStore and stops calling it when failures exceed a threshold.
  *
- * Resilience4j was an option, but this is a learning project, so ... */
+ * Resilience4j was an option, but this is a learning project, so ...
+ */
 class CircuitBreakerCounterStore(
     private val delegate: CounterStore,
     private val failureThreshold: Int,
@@ -31,6 +33,7 @@ class CircuitBreakerCounterStore(
   // Hold one atomic value rather than two
   private data class BreakerState(val failures: Int = 0, val lastFailure: Instant? = null) {
 
+    @Suppress("ReturnCount") // 4 line function, it's fine
     fun resolve(failureThreshold: Int, resetTimeout: Duration, clock: Clock): State {
       if (failures < failureThreshold) return State.CLOSED
       val last = lastFailure ?: return State.CLOSED

@@ -26,7 +26,8 @@ data class SluiceConfiguration(
     private val logger = LoggerFactory.getLogger(SluiceConfiguration::class.java)
     private const val DEFAULT_MAX_IDENTIFIER_LENGTH = 256
 
-    @Suppress("CyclomaticComplexMethod") // linear validation chain, logic is easy-peasy
+    @Suppress(
+        "CyclomaticComplexMethod", "ThrowsCount") // linear validation chain, logic is easy-peasy
     fun from(config: ApplicationConfig): SluiceConfiguration {
       val exceptions = mutableListOf<ConfigurationException>()
       val redisUrl = config.propertyOrNull("rate-limit.backend.redis-uri")?.getString()

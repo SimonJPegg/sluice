@@ -71,7 +71,7 @@ class RateLimitRouteTest {
         client.post("/check") {
           header(HttpHeaders.XRequestId, correlationID)
           contentType(ContentType.Application.Json)
-          setBody("""{"key":"some-key","policyID":"api-global"}""")
+          setBody("""{"key":"some-key","policyId":"api-global"}""")
         }
     Assertions.assertEquals(HttpStatusCode.OK, response.status)
     Assertions.assertEquals(correlationID, response.headers[HttpHeaders.XRequestId])
@@ -92,7 +92,7 @@ class RateLimitRouteTest {
       client.post("/check") {
         header(HttpHeaders.XRequestId, correlationID)
         contentType(ContentType.Application.Json)
-        setBody("""{"key":"some-other-key","policyID":"api-global"}""")
+        setBody("""{"key":"some-other-key","policyId":"api-global"}""")
       }
     }
 
@@ -100,7 +100,7 @@ class RateLimitRouteTest {
         client.post("/check") {
           header(HttpHeaders.XRequestId, correlationID)
           contentType(ContentType.Application.Json)
-          setBody("""{"key":"some-other-key","policyID":"api-global"}""")
+          setBody("""{"key":"some-other-key","policyId":"api-global"}""")
         }
     Assertions.assertEquals(HttpStatusCode.TooManyRequests, response.status)
     Assertions.assertEquals(correlationID, response.headers[HttpHeaders.XRequestId])
@@ -117,7 +117,7 @@ class RateLimitRouteTest {
       client.post("/check") {
         header(HttpHeaders.XRequestId, correlationID)
         contentType(ContentType.Application.Json)
-        setBody("""{"key":"some-other-key","policyID":"api-global"}""")
+        setBody("""{"key":"some-other-key","policyId":"api-global"}""")
       }
     }
 
@@ -125,7 +125,7 @@ class RateLimitRouteTest {
         client.post("/check") {
           header(HttpHeaders.XRequestId, correlationID)
           contentType(ContentType.Application.Json)
-          setBody("""{"key":"some-other-key","policyID":"api-global"}""")
+          setBody("""{"key":"some-other-key","policyId":"api-global"}""")
         }
     Assertions.assertEquals(HttpStatusCode.TooManyRequests, response.status)
     Assertions.assertEquals(correlationID, response.headers[HttpHeaders.XRequestId])
@@ -142,7 +142,7 @@ class RateLimitRouteTest {
         client.post("/check") {
           header(HttpHeaders.XRequestId, correlationID)
           contentType(ContentType.Application.Json)
-          setBody("""{"key":"", "policyID":"api-global"}""")
+          setBody("""{"key":"", "policyId":"api-global"}""")
         }
     Assertions.assertEquals(HttpStatusCode.BadRequest, response.status)
     Assertions.assertEquals(correlationID, response.headers[HttpHeaders.XRequestId])
@@ -159,7 +159,7 @@ class RateLimitRouteTest {
         client.post("/check") {
           header(HttpHeaders.XRequestId, correlationID)
           contentType(ContentType.Application.Json)
-          setBody("""{"key":"some-key", "policyID":""}""")
+          setBody("""{"key":"some-key", "policyId":""}""")
         }
     Assertions.assertEquals(HttpStatusCode.BadRequest, response.status)
     Assertions.assertEquals(correlationID, response.headers[HttpHeaders.XRequestId])
@@ -176,7 +176,7 @@ class RateLimitRouteTest {
         client.post("/check") {
           header(HttpHeaders.XRequestId, correlationID)
           contentType(ContentType.Application.Json)
-          setBody("""{"key":"some-key", "policyID":"allow-all-requests"}""")
+          setBody("""{"key":"some-key", "policyId":"allow-all-requests"}""")
         }
     Assertions.assertEquals(HttpStatusCode.NotFound, response.status)
     Assertions.assertEquals(correlationID, response.headers[HttpHeaders.XRequestId])
@@ -194,7 +194,7 @@ class RateLimitRouteTest {
         client.post("/check") {
           header(HttpHeaders.XRequestId, correlationID)
           contentType(ContentType.Application.Json)
-          setBody("""{"key":"some\u0000key","policyID":"api-global"}""")
+          setBody("""{"key":"some\u0000key","policyId":"api-global"}""")
         }
     Assertions.assertEquals(HttpStatusCode.BadRequest, response.status)
     Assertions.assertEquals(correlationID, response.headers[HttpHeaders.XRequestId])
@@ -212,7 +212,7 @@ class RateLimitRouteTest {
         client.post("/check") {
           header(HttpHeaders.XRequestId, correlationID)
           contentType(ContentType.Application.Json)
-          setBody("""{"key":some-key "policyID":"api-global"}""")
+          setBody("""{"key":some-key "policyId":"api-global"}""")
         }
     Assertions.assertEquals(HttpStatusCode.BadRequest, response.status)
     Assertions.assertEquals(correlationID, response.headers[HttpHeaders.XRequestId])
@@ -229,7 +229,7 @@ class RateLimitRouteTest {
         client.post("/check") {
           header(HttpHeaders.XRequestId, correlationID)
           contentType(ContentType.Application.Json)
-          setBody("""{"key":some-key "policyID":"api-global"}""")
+          setBody("""{"key":some-key "policyId":"api-global"}""")
         }
     Assertions.assertEquals(HttpStatusCode.BadRequest, response.status)
     Assertions.assertEquals(correlationID, response.headers[HttpHeaders.XRequestId])
