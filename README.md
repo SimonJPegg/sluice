@@ -22,7 +22,7 @@ That's it. Sluice + Redis, running locally, no cluster needed.
 ## What it does
 
 - Four algorithms: fixed window, sliding window counter, sliding window log, token bucket
-- Pluggable via policy config — pick the algorithm that fits, per endpoint
+- Pluggable via policy config — pick the algorithm that fits, per key
 - Redis-backed (Lua scripts for atomicity) or in-memory (for testing)
 - Fail-open or fail-closed per policy when Redis is unavailable
 - Circuit breaker to stop hammering a dead Redis

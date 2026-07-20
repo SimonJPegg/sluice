@@ -16,6 +16,9 @@ import org.antipathy.sluice.api.model.PolicyNotFoundRequest
 import org.antipathy.sluice.api.model.ProcessedRequest
 import org.antipathy.sluice.api.model.RequestWithError
 import org.antipathy.sluice.core.policy.Policy
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
+
 
 /** Shim interface to avoid passing the MeterRegistry around (which is far too big for my liking) */
 interface Metrics {
@@ -44,6 +47,8 @@ interface Metrics {
 
 /** Prometheus implementation of the Metric interface */
 internal class PrometheusMetrics(private val registry: PrometheusMeterRegistry) : Metrics {
+
+  private val policyTimestamps = ConcurrentHashMap<String, AtomicLong>()
 
   override fun trackEvaluation(policy: Policy, result: ProcessedRequest, duration: Duration) {
 
@@ -88,9 +93,11 @@ internal class PrometheusMetrics(private val registry: PrometheusMeterRegistry) 
   }
 
   override fun trackPolicyLoaded(policy: Policy, instant: Instant) {
-    registry.gauge(
-        "sluice_policy_loaded_timestamp",
-        Tags.of("policy", policy.id),
-        instant.epochSeconds.toDouble())
+    val holder = policyTimestamps.computeIfAbsent(policy.id) { id ->
+      val ref = AtomicLong(0)
+      registry.gauge("sluice_policy_loaded_timestamp", Tags.of("policy", id), ref) { it.get().toDouble() }
+      ref
+    }
+    holder.set(instant.epochSeconds)
   }
 }
