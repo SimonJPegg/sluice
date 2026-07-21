@@ -1,6 +1,7 @@
 ![Build](https://github.com/simonJPegg/sluice/actions/workflows/test.yml/badge.svg)
 ![Release](https://github.com/simonJPegg/sluice/actions/workflows/release.yml/badge.svg)
 ![License](https://img.shields.io/github/license/simonJPegg/sluice)
+![Version](https://img.shields.io/github/v/tag/simonJPegg/sluice)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/6d3fb07246554e6e9858a25fc906bbfb)](https://app.codacy.com/gh/SimonJPegg/sluice/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 # Sluice
 
@@ -69,7 +70,7 @@ Architecture decisions documented in `docs/decisions/`.
 
 ### v1.0.0 (current)
 - ~~Helm chart~~ ✓
-- CI pipeline, container image with SBOM
+- ~~CI pipeline, container image with SBOM~~ ✓
 
 ### v1.1.0 — Resilience
 - Connection pooling

@@ -1,9 +1,9 @@
-FROM gradle:jdk21-corretto-al2023 as build
+FROM gradle:jdk21-corretto-al2023 AS build
 COPY . /build/
 WORKDIR /build
 RUN ./gradlew buildFatJar
 
-FROM eclipse-temurin:21-jre-alpine as app
+FROM eclipse-temurin:21-jre-alpine
 RUN addgroup -S sluice && adduser -S sluice -G sluice
 WORKDIR /app
 COPY --from=build /build/build/libs/sluice-all.jar /app/sluice.jar

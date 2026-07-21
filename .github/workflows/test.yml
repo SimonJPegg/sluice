@@ -22,5 +22,5 @@ jobs:
         run: ./gradlew detekt
       - name: Test
         run: ./gradlew test
-      - name: docker build
-        run: docker build . --file Dockerfile --tag sluice:$(date +%s)
+      - name: Docker build
+        run: docker build . --tag sluice:$(date +%s)

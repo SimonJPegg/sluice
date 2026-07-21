@@ -12,6 +12,14 @@ Deploys sluice and a single-node Redis to Kubernetes. That's it.
 
 ## Install
 
+From GHCR (OCI registry):
+
+```bash
+helm install sluice oci://ghcr.io/simonjpegg/charts/sluice --version 0.0.1
+```
+
+From source:
+
 ```bash
 helm install sluice ./charts/sluice
 ```
@@ -19,9 +27,8 @@ helm install sluice ./charts/sluice
 With overrides:
 
 ```bash
-helm install sluice ./charts/sluice \
-  --set image.repository=ghcr.io/yourname/sluice \
-  --set image.tag=1.0.0
+helm install sluice oci://ghcr.io/simonjpegg/charts/sluice --version 0.0.1 \
+  --set image.tag=0.0.1
 ```
 
 ## Test
@@ -90,7 +97,7 @@ Scrapes `/metrics` on the service port. Add labels if your Prometheus uses label
 | Key | Default                     | Description |
 |-----|-----------------------------|-------------|
 | `replicaCount` | `1`                         | Sluice replicas |
-| `image.repository` | `ghcr.io/simonJPegg/sluice` | Container image |
+| `image.repository` | `ghcr.io/simonjpegg/sluice` | Container image |
 | `image.tag` | `""` (uses appVersion)      | Image tag |
 | `image.pullPolicy` | `IfNotPresent`              | Pull policy |
 | `service.type` | `ClusterIP`                 | Service type |

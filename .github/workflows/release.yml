@@ -58,4 +58,4 @@ jobs:
       - name: Package Helm chart
         run: helm package charts/sluice --version ${{ github.ref_name }} --app-version ${{ github.ref_name }}
       - name: Push Helm chart to GHCR
-        run: helm push sluice-${{ github.ref_name }}.tgz oci://${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}
+        run: helm push sluice-${{ github.ref_name }}.tgz oci://${{ env.REGISTRY }}/simonjpegg/charts
