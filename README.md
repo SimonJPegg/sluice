@@ -54,9 +54,9 @@ Kotlin 2.x, Ktor, Lettuce, Micrometer. JVM 21. Gradle.
 
 ## Design
 
-- Strategy pattern for algorithms — stores are thin dispatchers, algorithms own the logic
-- Sealed types for decisions — `Allowed`, `Denied`, `Failed`. Compiler enforces exhaustive handling
-- Railway-oriented request pipeline — parse → validate → evaluate → respond, short-circuits on error
+![Architecture](docs/hld.drawio.svg)
+
+- Sealed types enforce exhaustive handling at every decision point — validation, evaluation, and response mapping. No exceptions for control flow
 - Atomic counters via Redis Lua scripts. In-memory uses `ConcurrentHashMap.compute`
 
 Architecture decisions documented in `docs/decisions/`.
