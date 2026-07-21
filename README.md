@@ -1,3 +1,7 @@
+![Build](https://github.com/simonJPegg/sluice/actions/workflows/test.yml/badge.svg)
+![Release](https://github.com/simonJPegg/sluice/actions/workflows/release.yml/badge.svg)
+![License](https://img.shields.io/github/license/simonJPegg/sluice)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/6d3fb07246554e6e9858a25fc906bbfb)](https://app.codacy.com/gh/SimonJPegg/sluice/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 # Sluice
 
 A standalone rate limiting service. You ask "can I do this?" over HTTP, it tells you yes or no with enough context to act on.

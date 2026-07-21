@@ -1,0 +1,4 @@
+---
+engines:
+  markdownlint:
+    enabled: false
