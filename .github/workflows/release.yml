@@ -12,6 +12,9 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+      - name: Lowercase image name
+        id: repo
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -36,14 +39,14 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}
+          images: ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v7
         with:
           context: .
           push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.ref_name }}
+          tags: ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}:${{ github.ref_name }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
           provenance: mode=max
@@ -55,4 +58,4 @@ jobs:
       - name: Package Helm chart
         run: helm package charts/sluice --version ${{ github.ref_name }} --app-version ${{ github.ref_name }}
       - name: Push Helm chart to GHCR
-        run: helm push sluice-${{ github.ref_name }}.tgz oci://${{ env.REGISTRY }}/simonjpegg
+        run: helm push sluice-${{ github.ref_name }}.tgz oci://${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}
