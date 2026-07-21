@@ -11,6 +11,8 @@ import io.ktor.server.application.install
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
 import io.ktor.server.netty.EngineMain
 import io.ktor.server.plugins.callid.CallId
+import io.ktor.server.plugins.callid.callIdMdc
+import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisException
@@ -158,6 +160,9 @@ fun Application.module() {
     header(HttpHeaders.XRequestId)
     generate { UUID.randomUUID().toString() }
     replyToHeader(HttpHeaders.XRequestId)
+  }
+  install(CallLogging) {
+    callIdMdc("requestId")
   }
 
   val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)

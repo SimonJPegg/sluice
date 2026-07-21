@@ -29,6 +29,7 @@ dependencies {
   implementation(libs.yamlkt)
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.micrometer.registry.prometheus)
+  implementation(libs.logback.classic)
 
   /* Test */
   testImplementation(kotlin("test"))

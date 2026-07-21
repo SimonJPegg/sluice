@@ -12,6 +12,7 @@ junit = "6.1.1"
 testcontainers = "2.0.5"
 testcontainers-redis = "2.2.4"
 mockk = "1.14.11"
+logback = "1.5.18"
 
 [libraries]
 ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
@@ -33,6 +34,7 @@ testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-jun
 testcontainers-redis = { module = "com.redis:testcontainers-redis", version.ref = "testcontainers-redis" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
