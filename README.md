@@ -68,18 +68,18 @@ Architecture decisions documented in `docs/decisions/`.
 
 ## Roadmap
 
-### v1.0.0 (current)
+### v0.x (current)
 - ~~Helm chart~~ ✓
 - ~~CI pipeline, container image with SBOM~~ ✓
 
-### v1.1.0 — Resilience
+### v0.1.0 — Resilience
 - Connection pooling
 - Backpressure / load shedding under degraded Redis
 
-### v1.2.0 — Security
+### v0.2.0 — Security
 - Authentication on `/check`
 
-### v1.3.0 — Confidence
+### v1.0.0 — Confidence
 - Load testing with k6 (published baselines)
 - Chaos testing (Redis failure, network partitions, latency injection)
 
