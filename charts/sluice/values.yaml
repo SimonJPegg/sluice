@@ -14,6 +14,20 @@ service:
   # -- Service port
   port: 8080
 
+# -- Ingress configuration
+ingress:
+  # -- Enable ingress
+  enabled: false
+  # -- Ingress class name
+  ingressClassName: traefik
+  # -- Hostname for the ingress
+  host: sluice.example.com
+  # -- Ingress annotations
+  annotations: {}
+  # -- TLS configuration (set to false to disable)
+  tls:
+    secretName: sluice-tls
+
 resources:
   requests:
     cpu: 100m
@@ -21,6 +35,27 @@ resources:
   limits:
     cpu: 500m
     memory: 512Mi
+
+# -- Pod-level security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- Container-level security context
+securityContext:
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
 
 # -- Liveness probe configuration
 livenessProbe:
@@ -87,6 +122,25 @@ redis:
   image: redis:8-alpine
   # -- Redis port
   port: 6379
+  # -- Pod-level security context for Redis
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+    seccompProfile:
+      type: RuntimeDefault
+  # -- Container-level security context for Redis
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 999
+    runAsGroup: 999
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
   # -- Redis resource limits
   resources:
     requests:
@@ -104,3 +158,10 @@ serviceMonitor:
   interval: 15s
   # -- Additional labels for ServiceMonitor discovery
   labels: {}
+
+# -- Grafana dashboard ConfigMap
+grafanaDashboard:
+  # -- Enable Grafana dashboard auto-discovery via sidecar
+  enabled: false
+  # -- Namespace to deploy the dashboard ConfigMap (where Grafana lives)
+  namespace: monitoring

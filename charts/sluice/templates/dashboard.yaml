@@ -1,0 +1,15 @@
+{{- if .Values.grafanaDashboard.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sluice.fullname" . }}-dashboard
+  namespace: {{ .Values.grafanaDashboard.namespace | default "monitoring" }}
+  labels:
+    {{- include "sluice.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+  annotations:
+    k8s-sidecar-target-directory: dashboards/metrics
+data:
+  sluice.json: |-
+    {{- .Files.Get "dashboards/sluice.json" | nindent 4 }}
+{{- end }}

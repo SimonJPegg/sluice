@@ -15,7 +15,7 @@ Deploys sluice and a single-node Redis to Kubernetes. That's it.
 From GHCR (OCI registry):
 
 ```bash
-helm install sluice oci://ghcr.io/simonjpegg/charts/sluice --version 0.0.1
+helm install sluice oci://ghcr.io/simonjpegg/charts/sluice --version 0.0.4
 ```
 
 From source:
@@ -27,8 +27,8 @@ helm install sluice ./charts/sluice
 With overrides:
 
 ```bash
-helm install sluice oci://ghcr.io/simonjpegg/charts/sluice --version 0.0.1 \
-  --set image.tag=0.0.1
+helm install sluice oci://ghcr.io/simonjpegg/charts/sluice --version 0.0.4 \
+  --set image.tag=0.0.4
 ```
 
 ## Test

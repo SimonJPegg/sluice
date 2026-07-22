@@ -24,17 +24,6 @@ curl -X POST http://localhost:8080/check \
 
 That's it. Sluice + Redis, running locally, no cluster needed.
 
-## What it does
-
-- Four algorithms: fixed window, sliding window counter, sliding window log, token bucket
-- Pluggable via policy config — pick the algorithm that fits, per key
-- Redis-backed (Lua scripts for atomicity) or in-memory (for testing)
-- Fail-open or fail-closed per policy when Redis is unavailable
-- Circuit breaker to stop hammering a dead Redis
-- Policies loaded from YAML at startup, validated, no runtime mutation
-- Prometheus metrics on `/metrics` — outcomes, latency, errors, store health
-- Structured JSON logging, correlation ID propagation, config validation at startup
-
 ## API
 
 `POST /check` with `{"key": "...", "policyId": "..."}`.
@@ -63,8 +52,22 @@ Kotlin 2.x, Ktor, Lettuce, Micrometer. JVM 21. Gradle.
 
 - Sealed types enforce exhaustive handling at every decision point — validation, evaluation, and response mapping. No exceptions for control flow
 - Atomic counters via Redis Lua scripts. In-memory uses `ConcurrentHashMap.compute`
+- Four algorithms: fixed window, sliding window counter, sliding window log, token bucket
+- Pluggable via policy config — pick the algorithm that fits, per key
+- Redis-backed (Lua scripts for atomicity) or in-memory (for testing)
+- Fail-open or fail-closed per policy when Redis is unavailable
+- Circuit breaker to stop hammering a dead Redis
+- Policies loaded from YAML at startup, validated, no runtime mutation
+- Structured JSON logging, correlation ID propagation, config validation at startup
 
 Architecture decisions documented in `docs/decisions/`.
+
+
+## Metrics
+
+Prometheus metrics on `/metrics` — outcomes, latency, errors, store health
+
+ <img src="docs/metrics.png" alt="Grafana Dashboard" width="80%">
 
 ## Roadmap
 
