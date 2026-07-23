@@ -38,18 +38,21 @@ class RedisCounterStoreTest : RedisTest() {
   fun `unimplemented algorithm - returns Failed`() = runTest {
     val store =
         RedisCounterStore(
-            mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection))))
+            mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection)))
+        )
     val testKey = "test-key"
     assertInstanceOf(
         Failed::class.java,
-        store.evaluate(testKey, defaultPolicy.copy(algorithmType = AlgorithmType.TOKEN_BUCKET)))
+        store.evaluate(testKey, defaultPolicy.copy(algorithmType = AlgorithmType.TOKEN_BUCKET)),
+    )
   }
 
   @Test
   fun `store fails open when the policy specifies it`() = runTest {
     val store =
         RedisCounterStore(
-            mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection))))
+            mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection)))
+        )
     val testKey = "test-key"
     connection.close()
     val result = assertInstanceOf(Allowed::class.java, store.evaluate(testKey, defaultPolicy))
@@ -62,7 +65,8 @@ class RedisCounterStoreTest : RedisTest() {
   fun `store fails closed when the policy specifies it`() = runTest {
     val store =
         RedisCounterStore(
-            mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection))))
+            mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection)))
+        )
     val testKey = "test-key"
     val policy = defaultPolicy.copy(failType = FailType.CLOSED)
     connection.close()
@@ -76,7 +80,8 @@ class RedisCounterStoreTest : RedisTest() {
     val store =
         RedisCounterStore(
             mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection))),
-            1.milliseconds)
+            1.milliseconds,
+        )
     val testKey = "test-key"
     val policy = defaultPolicy.copy(failType = FailType.CLOSED)
     connection.close()

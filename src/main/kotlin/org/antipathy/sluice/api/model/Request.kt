@@ -2,6 +2,7 @@ package org.antipathy.sluice.api.model
 
 import kotlin.time.Duration
 import kotlinx.serialization.Serializable
+import org.antipathy.sluice.core.model.FailureCategory
 import org.antipathy.sluice.core.policy.Policy
 
 /** Top-level sealed hierarchy for all request pipeline states. */
@@ -50,4 +51,9 @@ data class AllowedRequest(val remaining: Int, val limit: Int, val resetIn: Durat
 @Serializable data class DeniedRequest(val retryAfter: Duration) : ProcessedRequest
 
 /** Internal error during evaluation. */
-@Serializable data class FailedRequest(val reason: String) : ProcessedRequest
+@Serializable
+data class FailedRequest(
+    val reason: String,
+    val failureCategory: FailureCategory,
+    val retryAfter: Duration?,
+) : ProcessedRequest

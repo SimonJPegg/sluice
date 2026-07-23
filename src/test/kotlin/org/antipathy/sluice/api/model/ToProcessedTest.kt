@@ -33,7 +33,7 @@ class ToProcessedTest {
 
   @Test
   fun `maps Failed to FailedRequest with reason`() {
-    val failed = Failed("Computers, how do they work?")
+    val failed = Failed("Computers, how do they work?", 1.seconds)
     val policy = Policy("1", 1u, FailType.OPEN, 1.seconds, AlgorithmType.TOKEN_BUCKET)
     val result = assertInstanceOf<FailedRequest>(failed.toProcessed(policy))
     assertEquals(failed.reason, result.reason)

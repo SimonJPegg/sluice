@@ -20,7 +20,7 @@ class InMemoryCounterStore(
     } catch (_: NoSuchElementException) {
       val error = "Algorithm ${policy.algorithmType} has not been implemented yet"
       logger.error("Request failed: $error")
-      Failed(reason = error)
+      Failed(reason = error, null)
     }
   }
 }

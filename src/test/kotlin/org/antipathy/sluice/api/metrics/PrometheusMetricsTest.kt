@@ -14,6 +14,7 @@ import org.antipathy.sluice.api.model.InvalidPolicyRequest
 import org.antipathy.sluice.api.model.MissingKeyRequest
 import org.antipathy.sluice.api.model.MissingPolicyRequest
 import org.antipathy.sluice.api.model.PolicyNotFoundRequest
+import org.antipathy.sluice.core.model.FailureCategory
 import org.antipathy.sluice.core.policy.AlgorithmType
 import org.antipathy.sluice.core.policy.FailType
 import org.antipathy.sluice.core.policy.Policy
@@ -47,7 +48,7 @@ class PrometheusMetricsTest {
 
   @Test
   fun `should increment counter for failed evaluation`() {
-    val failed = FailedRequest("Gremlins")
+    val failed = FailedRequest("Gremlins", FailureCategory.SEE_REASON, null)
     metrics.trackEvaluation(defaultPolicy, failed, 1.seconds)
     val counter =
         registry.counter("sluice_request_outcomes", "policy", defaultPolicy.id, "result", "failed")

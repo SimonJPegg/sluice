@@ -32,7 +32,8 @@ sealed class RedisAlgorithm(protected val scriptLoader: ScriptLoader) : Algorith
                 ScriptOutputType.MULTI,
                 arrayOf(key),
                 policy.limit.toString(),
-                policy.window.inWholeSeconds.toString())
+                policy.window.inWholeSeconds.toString(),
+            )
             .await()
 
     val allowed = result[0] == 1L

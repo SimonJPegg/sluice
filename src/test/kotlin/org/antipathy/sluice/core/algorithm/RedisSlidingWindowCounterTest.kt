@@ -80,7 +80,9 @@ class RedisSlidingWindowCounterTest : RedisTest() {
         delay(defaultPolicy.window + (defaultPolicy.window / 2))
         val result =
             Assertions.assertInstanceOf(
-                Allowed::class.java, algorithm.calculate(key, defaultPolicy))
+                Allowed::class.java,
+                algorithm.calculate(key, defaultPolicy),
+            )
         assertTrue(result.remaining in 3u..6u)
       }
 
@@ -129,7 +131,8 @@ class RedisSlidingWindowCounterTest : RedisTest() {
     val allowed = results.count { it is Allowed }
     assertTrue(
         allowed < policy.limit.toInt(),
-        "Expected burst protection: got $allowed allowed (fixed window would allow ${policy.limit})")
+        "Expected burst protection: got $allowed allowed (fixed window would allow ${policy.limit})",
+    )
     assertTrue(allowed > 0, "Expected at least one request to be allowed after boundary")
   }
 

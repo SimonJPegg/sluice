@@ -37,7 +37,8 @@ class RedisTokenBucketTest : RedisTest() {
   private fun assertDurationApprox(expected: Duration, actual: Duration, msg: String = "") {
     assertTrue(
         actual >= expected - tolerance && actual <= expected + tolerance,
-        "$msg expected ~$expected but was $actual")
+        "$msg expected ~$expected but was $actual",
+    )
   }
 
   @Test

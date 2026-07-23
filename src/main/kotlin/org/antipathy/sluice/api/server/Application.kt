@@ -48,6 +48,7 @@ import org.antipathy.sluice.core.store.CircuitBreakerCounterStore
 import org.antipathy.sluice.core.store.CounterStore
 import org.antipathy.sluice.core.store.InMemoryCounterStore
 import org.antipathy.sluice.core.store.RedisCounterStore
+import org.antipathy.sluice.core.store.ThrottledCounterStore
 import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("org.antipathy.sluice.api.server.Application")
@@ -62,7 +63,7 @@ fun main(
 /** Creates a plugin to close the redis connection cleanly on shutdown */
 internal fun createRedisCleanUpPlugin(
     client: RedisClient,
-    connection: StatefulRedisConnection<String, String>
+    connection: StatefulRedisConnection<String, String>,
 ): ApplicationPlugin<Unit> {
   return createApplicationPlugin("RedisCleanupPlugin") {
     on(MonitoringEvent(ApplicationStopping)) {
@@ -86,7 +87,7 @@ internal fun redisStore(
     redisUri: String,
     policyContext: PolicyContext,
     metrics: Metrics,
-    installPlugin: (ApplicationPlugin<Unit>) -> Unit
+    installPlugin: (ApplicationPlugin<Unit>) -> Unit,
 ): Pair<CounterStore, StatusChecker> {
 
   val client = RedisClient.create(redisUri)
@@ -106,22 +107,24 @@ internal fun redisStore(
       }
   val statusChecker =
       StatusChecker(
-          PolicyStatus(policyContext.allPolicies.size, policyContext.policiesLoaded.toString())) {
-            try {
-              val start = TimeSource.Monotonic.markNow()
-              connection.async().ping().await()
-              StoreStatus(
-                  type = "redis",
-                  status = StoreStatus.HEALTHY,
-                  latencyMS = start.elapsedNow().inWholeMilliseconds)
-            } catch (_: RedisException) {
-              StoreStatus(
-                  type = "redis",
-                  status = StoreStatus.FAILED,
-                  latencyMS = 0,
-              )
-            }
-          }
+          PolicyStatus(policyContext.allPolicies.size, policyContext.policiesLoaded.toString())
+      ) {
+        try {
+          val start = TimeSource.Monotonic.markNow()
+          connection.async().ping().await()
+          StoreStatus(
+              type = "redis",
+              status = StoreStatus.HEALTHY,
+              latencyMS = start.elapsedNow().inWholeMilliseconds,
+          )
+        } catch (_: RedisException) {
+          StoreStatus(
+              type = "redis",
+              status = StoreStatus.FAILED,
+              latencyMS = 0,
+          )
+        }
+      }
 
   return Pair(RedisCounterStore(algorithms), statusChecker)
 }
@@ -131,16 +134,18 @@ internal fun inMemoryStore(policyContext: PolicyContext): Pair<CounterStore, Sta
   logger.info("No Redis connection found, loading InMemoryCounterStore")
   val statusChecker =
       StatusChecker(
-          PolicyStatus(policyContext.allPolicies.size, policyContext.policiesLoaded.toString())) {
-            StoreStatus(
-                type = "in memory",
-                status = StoreStatus.HEALTHY,
-                latencyMS = 0,
-            )
-          }
+          PolicyStatus(policyContext.allPolicies.size, policyContext.policiesLoaded.toString())
+      ) {
+        StoreStatus(
+            type = "in memory",
+            status = StoreStatus.HEALTHY,
+            latencyMS = 0,
+        )
+      }
   val store =
       InMemoryCounterStore(
-          policyContext.requiredAlgorithms.associate { it to inMemoryAlgorithm(it) })
+          policyContext.requiredAlgorithms.associate { it to inMemoryAlgorithm(it) }
+      )
   return Pair(store, statusChecker)
 }
 
@@ -154,16 +159,15 @@ fun Application.module() {
         Json {
           isLenient = false
           ignoreUnknownKeys = false
-        })
+        }
+    )
   }
   install(CallId) {
     header(HttpHeaders.XRequestId)
     generate { UUID.randomUUID().toString() }
     replyToHeader(HttpHeaders.XRequestId)
   }
-  install(CallLogging) {
-    callIdMdc("requestId")
-  }
+  install(CallLogging) { callIdMdc("requestId") }
 
   val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
   val metrics = PrometheusMetrics(appMicrometerRegistry)
@@ -184,25 +188,28 @@ fun Application.module() {
   logger.info(
       "Loaded {} policies and {} algorithms",
       policyContext.allPolicies.size,
-      policyContext.requiredAlgorithms.size)
-  val (store, statusChecker) =
+      policyContext.requiredAlgorithms.size,
+  )
+
+  val (baseStore, statusChecker) =
       if (config.redisUrl != null) {
         redisStore(config.redisUrl, policyContext, metrics) { plugin -> install(plugin) }
       } else {
         inMemoryStore(policyContext)
       }
 
-  val instrumentedCounterStore =
-      if (config.circuitBreaker != null) {
-        InstrumentedCounterStore(
-            CircuitBreakerCounterStore(
-                store, config.circuitBreaker.failureThreshold, config.circuitBreaker.resetTimeout),
-            metrics)
-      } else {
-        InstrumentedCounterStore(store, metrics)
-      }
+  val withCircuitBreaker =
+      config.circuitBreaker?.let {
+        CircuitBreakerCounterStore(baseStore, it.failureThreshold, it.resetTimeout)
+      } ?: baseStore
+
+  val withThrottle =
+      config.maxConcurrentRequests?.let { ThrottledCounterStore(it, withCircuitBreaker) }
+          ?: withCircuitBreaker
+
+  val finalStore = InstrumentedCounterStore(withThrottle, metrics)
 
   healthCheck(statusChecker)
-  rateLimit(instrumentedCounterStore, policyRegistry, config.maxIdentifierLength, metrics)
+  rateLimit(finalStore, policyRegistry, config.maxIdentifierLength, metrics)
   metrics { appMicrometerRegistry.scrape() }
 }

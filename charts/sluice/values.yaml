@@ -77,6 +77,8 @@ readinessProbe:
 rateLimiting:
   # -- Max identifier length for key validation
   maxIdentifierLength: 256
+  # -- Max concurrent requests before load shedding (omit to disable)
+  # maxConcurrentRequests: 100
   # -- Circuit breaker configuration
   circuitBreaker:
     # -- Enable circuit breaker on the counter store

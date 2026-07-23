@@ -26,7 +26,8 @@ class RedisTokenBucket(scriptLoader: ScriptLoader) : RedisAlgorithm(scriptLoader
                 ScriptOutputType.MULTI,
                 arrayOf(key),
                 policy.limit.toString(),
-                policy.window.inWholeSeconds.toString())
+                policy.window.inWholeSeconds.toString(),
+            )
             .await()
 
     val allowed = result[0] == 1L

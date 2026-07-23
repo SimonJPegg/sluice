@@ -15,28 +15,27 @@ fun RateLimitResponse.toProcessed(policy: Policy): ProcessedRequest =
     when (this) {
       is Allowed -> AllowedRequest(remaining.toInt(), policy.limit.toInt(), resetIn)
       is Denied -> DeniedRequest(retryAfter)
-      is Failed -> FailedRequest(reason)
+      is Failed -> FailedRequest(reason, failureCategory, retryAfter)
     }
 
 /** Maps validation errors to HTTP responses. Returns a curried function awaiting the call. */
 fun RequestWithError.toResponse(): suspend (ApplicationCall) -> Unit =
     when (this) {
       is MissingKeyRequest -> { call ->
-            call.respond(HttpStatusCode.BadRequest, ErrorResponse(message))
-          }
+        call.respond(HttpStatusCode.BadRequest, ErrorResponse(message))
+      }
       is MissingPolicyRequest -> { call ->
-            call.respond(HttpStatusCode.BadRequest, ErrorResponse(message))
-          }
+        call.respond(HttpStatusCode.BadRequest, ErrorResponse(message))
+      }
       is InvalidPolicyRequest -> { call ->
-            call.respond(HttpStatusCode.BadRequest, ErrorResponse(message))
-          }
+        call.respond(HttpStatusCode.BadRequest, ErrorResponse(message))
+      }
       is InvalidKeyRequest -> { call ->
-            call.respond(HttpStatusCode.BadRequest, ErrorResponse(message))
-          }
+        call.respond(HttpStatusCode.BadRequest, ErrorResponse(message))
+      }
       is PolicyNotFoundRequest -> { call ->
-            call.respond(
-                HttpStatusCode.NotFound, ErrorResponse("Policy $policyName does not exist"))
-          }
+        call.respond(HttpStatusCode.NotFound, ErrorResponse("Policy $policyName does not exist"))
+      }
     }
 
 /**
@@ -46,14 +45,19 @@ fun RequestWithError.toResponse(): suspend (ApplicationCall) -> Unit =
 fun ProcessedRequest.toResponse(): suspend (ApplicationCall) -> Unit =
     when (this) {
       is AllowedRequest -> { call ->
-            call.response.header("X-RateLimit-Limit", limit.toString())
-            call.response.header("X-RateLimit-Remaining", remaining.toString())
-            call.response.header("X-RateLimit-Reset", resetIn.inWholeSeconds.toString())
-            call.respond(HttpStatusCode.OK, this)
-          }
+        call.response.header("X-RateLimit-Limit", limit.toString())
+        call.response.header("X-RateLimit-Remaining", remaining.toString())
+        call.response.header("X-RateLimit-Reset", resetIn.inWholeSeconds.toString())
+        call.respond(HttpStatusCode.OK, this)
+      }
       is DeniedRequest -> { call ->
-            call.response.header("Retry-After", retryAfter.inWholeSeconds.toString())
-            call.respond(HttpStatusCode.TooManyRequests, this)
-          }
-      is FailedRequest -> { call -> call.respond(HttpStatusCode.InternalServerError, this) }
+        call.response.header("Retry-After", retryAfter.inWholeSeconds.toString())
+        call.respond(HttpStatusCode.TooManyRequests, this)
+      }
+      is FailedRequest -> { call ->
+        if (this.retryAfter != null) {
+          call.response.header("Retry-After", retryAfter.inWholeSeconds.toString())
+        }
+        call.respond(HttpStatusCode.ServiceUnavailable, this)
+      }
     }

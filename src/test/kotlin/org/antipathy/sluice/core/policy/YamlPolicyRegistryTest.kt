@@ -11,6 +11,7 @@ import org.junit.jupiter.api.fail
 class YamlPolicyRegistryTest {
 
   @Test
+  @Suppress("LongMethod") // there's very little logic here
   fun `Valid config, loads correctly, get returns the right policy`() {
     val path = "/policy/valid"
     val dir =
@@ -25,8 +26,10 @@ class YamlPolicyRegistryTest {
             limit = 100u,
             window = 1.minutes,
             algorithmType = AlgorithmType.FIXED_WINDOW,
-            failType = FailType.OPEN),
-        apiGlobal)
+            failType = FailType.OPEN,
+        ),
+        apiGlobal,
+    )
 
     val apiHeavy = registry.get("api-heavy")
     assertEquals(
@@ -35,8 +38,10 @@ class YamlPolicyRegistryTest {
             limit = 10u,
             window = 1.minutes,
             algorithmType = AlgorithmType.SLIDING_WINDOW_COUNTER,
-            failType = FailType.OPEN),
-        apiHeavy)
+            failType = FailType.OPEN,
+        ),
+        apiHeavy,
+    )
 
     val loginBruteForce = registry.get("login-brute-force")
     assertEquals(
@@ -45,8 +50,10 @@ class YamlPolicyRegistryTest {
             limit = 5u,
             window = 5.minutes,
             algorithmType = AlgorithmType.SLIDING_WINDOW_LOG,
-            failType = FailType.CLOSED),
-        loginBruteForce)
+            failType = FailType.CLOSED,
+        ),
+        loginBruteForce,
+    )
 
     val loginPerIp = registry.get("login-per-ip")
     assertEquals(
@@ -55,8 +62,10 @@ class YamlPolicyRegistryTest {
             limit = 20u,
             window = 10.minutes,
             algorithmType = AlgorithmType.TOKEN_BUCKET,
-            failType = FailType.CLOSED),
-        loginPerIp)
+            failType = FailType.CLOSED,
+        ),
+        loginPerIp,
+    )
 
     val webhookRetry = registry.get("webhook-retry")
     assertEquals(
@@ -65,8 +74,10 @@ class YamlPolicyRegistryTest {
             limit = 3u,
             window = 1.minutes,
             algorithmType = AlgorithmType.TOKEN_BUCKET,
-            failType = FailType.CLOSED),
-        webhookRetry)
+            failType = FailType.CLOSED,
+        ),
+        webhookRetry,
+    )
   }
 
   @Test

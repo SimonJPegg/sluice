@@ -45,7 +45,8 @@ class RateLimitRouteTest {
           Json {
             isLenient = false
             ignoreUnknownKeys = false
-          })
+          }
+      )
     }
     install(CallId) {
       header(HttpHeaders.XRequestId)
@@ -79,7 +80,9 @@ class RateLimitRouteTest {
     Assertions.assertEquals("99", response.headers["X-RateLimit-Remaining"])
     Assertions.assertEquals("60", response.headers["X-RateLimit-Reset"])
     Assertions.assertEquals(
-        """{"remaining":99,"limit":100,"resetIn":"PT1M"}""", response.bodyAsText())
+        """{"remaining":99,"limit":100,"resetIn":"PT1M"}""",
+        response.bodyAsText(),
+    )
   }
 
   @Test
@@ -181,7 +184,9 @@ class RateLimitRouteTest {
     Assertions.assertEquals(HttpStatusCode.NotFound, response.status)
     Assertions.assertEquals(correlationID, response.headers[HttpHeaders.XRequestId])
     Assertions.assertEquals(
-        """{"error":"Policy allow-all-requests does not exist"}""", response.bodyAsText())
+        """{"error":"Policy allow-all-requests does not exist"}""",
+        response.bodyAsText(),
+    )
   }
 
   @Test
@@ -199,7 +204,9 @@ class RateLimitRouteTest {
     Assertions.assertEquals(HttpStatusCode.BadRequest, response.status)
     Assertions.assertEquals(correlationID, response.headers[HttpHeaders.XRequestId])
     Assertions.assertEquals(
-        """{"error":"Key does not match '^[a-zA-Z0-9\\-_:]+$'"}""", response.bodyAsText())
+        """{"error":"Key does not match '^[a-zA-Z0-9\\-_:]+$'"}""",
+        response.bodyAsText(),
+    )
   }
 
   @Test

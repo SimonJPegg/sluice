@@ -26,7 +26,8 @@ class InMemorySlidingWindowCounter(private val clock: Clock = Clock.System) : In
 
   override suspend fun calculate(key: String, policy: Policy): RateLimitResponse {
     // pre-assign a value, to avoid null handling
-    var result: RateLimitResponse = Failed(reason = "unexpected: compute lambda did not execute")
+    var result: RateLimitResponse =
+        Failed(reason = "unexpected: compute lambda did not execute", policy.window)
     counters.compute(key) { _, existing ->
       val currentTime = clock.now()
       val counter = existing ?: SlidingWindowCounter(0u, 0u, currentTime)
@@ -44,7 +45,7 @@ class InMemorySlidingWindowCounter(private val clock: Clock = Clock.System) : In
   private fun rollWindow(
       counter: SlidingWindowCounter,
       currentTime: Instant,
-      window: Duration
+      window: Duration,
   ): Pair<SlidingWindowCounter, Duration> {
     if (currentTime - counter.windowStarted >= window + window) {
       // Two or more windows stale, previous is meaningless
@@ -57,8 +58,10 @@ class InMemorySlidingWindowCounter(private val clock: Clock = Clock.System) : In
           counter.copy(
               currentWindowCount = 0u,
               previousWindowCount = counter.currentWindowCount,
-              windowStarted = newWindowStart),
-          window - (currentTime.minus(newWindowStart)))
+              windowStarted = newWindowStart,
+          ),
+          window - (currentTime.minus(newWindowStart)),
+      )
     }
     return Pair(counter, remaining)
   }
@@ -67,7 +70,7 @@ class InMemorySlidingWindowCounter(private val clock: Clock = Clock.System) : In
   private fun estimate(
       rolledCounter: SlidingWindowCounter,
       remaining: Duration,
-      window: Duration
+      window: Duration,
   ): UInt {
     val overlapPercent = (remaining / window)
     val estimated =
@@ -81,12 +84,13 @@ class InMemorySlidingWindowCounter(private val clock: Clock = Clock.System) : In
       rolledCounter: SlidingWindowCounter,
       estimated: UInt,
       policy: Policy,
-      remaining: Duration
+      remaining: Duration,
   ): Pair<SlidingWindowCounter, RateLimitResponse> {
     return if (estimated + 1u <= policy.limit) {
       Pair(
           rolledCounter.copy(currentWindowCount = rolledCounter.currentWindowCount + 1u),
-          Allowed(policy.limit - (estimated + 1u), remaining))
+          Allowed(policy.limit - (estimated + 1u), remaining),
+      )
     } else {
       Pair(rolledCounter, Denied(remaining))
     }

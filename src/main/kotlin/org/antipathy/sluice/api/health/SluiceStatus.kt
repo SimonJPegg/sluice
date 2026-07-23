@@ -26,7 +26,7 @@ data class StoreStatus(
 /** Holds static config and a dynamic probe. Computes full status on demand per request. */
 class StatusChecker(
     private val policyStatus: PolicyStatus,
-    private val pingRedis: (suspend () -> StoreStatus)
+    private val pingRedis: (suspend () -> StoreStatus),
 ) {
   /** Assembles the response — policy info is baked in, store status is computed live. */
   suspend fun status(): SluiceStatus =

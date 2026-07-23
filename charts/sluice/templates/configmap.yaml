@@ -34,6 +34,9 @@ data:
         threshold: {{ .Values.rateLimiting.circuitBreaker.errorThreshold }}
         timeout-ms: {{ .Values.rateLimiting.circuitBreaker.timeoutMs }}
       {{- end }}
+      {{- if .Values.rateLimiting.maxConcurrentRequests }}
+      max-concurrent-requests: {{ .Values.rateLimiting.maxConcurrentRequests }}
+      {{- end }}
       {{- if .Values.rateLimiting.maxIdentifierLength }}
       validation:
         max-identifier-length: {{ .Values.rateLimiting.maxIdentifierLength }}

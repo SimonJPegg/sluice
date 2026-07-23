@@ -82,7 +82,9 @@ class RateLimitEndToEndTest : RedisTest() {
         Assertions.assertEquals("99", response.headers["X-RateLimit-Remaining"])
         Assertions.assertEquals("60", response.headers["X-RateLimit-Reset"])
         Assertions.assertEquals(
-            """{"remaining":99,"limit":100,"resetIn":"PT1M"}""", response.bodyAsText())
+            """{"remaining":99,"limit":100,"resetIn":"PT1M"}""",
+            response.bodyAsText(),
+        )
       }
 
   @Test

@@ -28,7 +28,8 @@ class InMemoryCounterStoreTest {
     val store =
         InMemoryCounterStore(
             algorithms =
-                mapOf(AlgorithmType.FIXED_WINDOW to InMemoryFixedWindow(clock = FakeClock())))
+                mapOf(AlgorithmType.FIXED_WINDOW to InMemoryFixedWindow(clock = FakeClock()))
+        )
     val testKey = "test-key"
     val result = assertInstanceOf(Allowed::class.java, store.evaluate(testKey, defaultPolicy))
 
@@ -41,10 +42,12 @@ class InMemoryCounterStoreTest {
     val store =
         InMemoryCounterStore(
             algorithms =
-                mapOf(AlgorithmType.FIXED_WINDOW to InMemoryFixedWindow(clock = FakeClock())))
+                mapOf(AlgorithmType.FIXED_WINDOW to InMemoryFixedWindow(clock = FakeClock()))
+        )
     val testKey = "test-key"
     assertInstanceOf(
         Failed::class.java,
-        store.evaluate(testKey, defaultPolicy.copy(algorithmType = AlgorithmType.TOKEN_BUCKET)))
+        store.evaluate(testKey, defaultPolicy.copy(algorithmType = AlgorithmType.TOKEN_BUCKET)),
+    )
   }
 }

@@ -75,9 +75,8 @@ Prometheus metrics on `/metrics` — outcomes, latency, errors, store health
 - ~~Helm chart~~ ✓
 - ~~CI pipeline, container image with SBOM~~ ✓
 
-### v0.1.0 — Resilience
-- Connection pooling
-- Backpressure / load shedding under degraded Redis
+### v0.1.0 — (current)
+-~~Backpressure / load shedding under degraded Redis~~
 
 ### v0.2.0 — Security
 - Authentication on `/check`

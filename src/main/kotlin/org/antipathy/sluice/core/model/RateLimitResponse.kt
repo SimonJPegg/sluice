@@ -19,4 +19,12 @@ data class Denied(
 /** Internal errors as data, not thrown exceptions. */
 data class Failed(
     val reason: String,
+    val retryAfter: Duration?,
+    val failureCategory: FailureCategory = FailureCategory.SEE_REASON,
 ) : RateLimitResponse
+
+enum class FailureCategory {
+  OVERLOADED, // we're load shedding
+  CIRCUIT_OPEN, // circuit breaker has tripped
+  SEE_REASON, // generic errors
+}

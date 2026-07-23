@@ -22,7 +22,8 @@ class InMemoryTokenBucket(private val clock: Clock = Clock.System) : InMemoryAlg
   @Suppress("MagicNumber") // its milliseconds
   override suspend fun calculate(key: String, policy: Policy): RateLimitResponse {
     // pre-assign a value, to avoid null handling
-    var result: RateLimitResponse = Failed(reason = "unexpected: compute lambda did not execute")
+    var result: RateLimitResponse =
+        Failed(reason = "unexpected: compute lambda did not execute", policy.window)
     counters.compute(key) { _, existing ->
       val currentTime = clock.now()
       val counter = existing ?: TokenBucket(policy.limit.toDouble(), currentTime)
@@ -36,7 +37,8 @@ class InMemoryTokenBucket(private val clock: Clock = Clock.System) : InMemoryAlg
         result =
             Allowed(
                 (currentTokens - 1).toUInt(),
-                ((policy.limit.toDouble() - (currentTokens - 1)) / refillRate).seconds)
+                ((policy.limit.toDouble() - (currentTokens - 1)) / refillRate).seconds,
+            )
         TokenBucket(currentTokens - 1, currentTime)
       } else {
         result = Denied(((1 - currentTokens) / refillRate).seconds)

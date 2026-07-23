@@ -2,6 +2,8 @@ package org.antipathy.sluice.api.metrics
 
 import io.micrometer.core.instrument.Tags
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration
 import kotlin.time.Instant
 import kotlin.time.toJavaDuration
@@ -16,9 +18,6 @@ import org.antipathy.sluice.api.model.PolicyNotFoundRequest
 import org.antipathy.sluice.api.model.ProcessedRequest
 import org.antipathy.sluice.api.model.RequestWithError
 import org.antipathy.sluice.core.policy.Policy
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicLong
-
 
 /** Shim interface to avoid passing the MeterRegistry around (which is far too big for my liking) */
 interface Metrics {
@@ -93,11 +92,14 @@ internal class PrometheusMetrics(private val registry: PrometheusMeterRegistry) 
   }
 
   override fun trackPolicyLoaded(policy: Policy, instant: Instant) {
-    val holder = policyTimestamps.computeIfAbsent(policy.id) { id ->
-      val ref = AtomicLong(0)
-      registry.gauge("sluice_policy_loaded_timestamp", Tags.of("policy", id), ref) { it.get().toDouble() }
-      ref
-    }
+    val holder =
+        policyTimestamps.computeIfAbsent(policy.id) { id ->
+          val ref = AtomicLong(0)
+          registry.gauge("sluice_policy_loaded_timestamp", Tags.of("policy", id), ref) {
+            it.get().toDouble()
+          }
+          ref
+        }
     holder.set(instant.epochSeconds)
   }
 }

@@ -6,7 +6,6 @@ import kotlinx.coroutines.test.runTest
 import org.antipathy.sluice.core.algorithm.FakeClock
 import org.antipathy.sluice.core.algorithm.InMemoryFixedWindow
 import org.antipathy.sluice.core.model.Allowed
-import org.antipathy.sluice.core.model.Denied
 import org.antipathy.sluice.core.model.Failed
 import org.antipathy.sluice.core.model.RateLimitResponse
 import org.antipathy.sluice.core.policy.AlgorithmType
@@ -32,19 +31,24 @@ class CircuitBreakerCounterStoreTest {
 
   private fun workingStore(): CounterStore =
       InMemoryCounterStore(
-          algorithms = mapOf(AlgorithmType.FIXED_WINDOW to InMemoryFixedWindow(clock = clock)))
+          algorithms = mapOf(AlgorithmType.FIXED_WINDOW to InMemoryFixedWindow(clock = clock))
+      )
 
   private fun failingStore(): CounterStore =
       object : CounterStore {
         override suspend fun evaluate(key: String, policy: Policy) =
-            Failed(reason = "Redis exploded")
+            Failed(reason = "Redis exploded", 1.seconds)
       }
 
   @Test
   fun `passes through when circuit is closed`() = runTest {
     val cb =
         CircuitBreakerCounterStore(
-            workingStore(), failureThreshold = 3, resetTimeout = 30.seconds, clock = clock)
+            workingStore(),
+            failureThreshold = 3,
+            resetTimeout = 30.seconds,
+            clock = clock,
+        )
     val result = cb.evaluate("key", openPolicy)
     assertInstanceOf(Allowed::class.java, result)
   }
@@ -53,20 +57,28 @@ class CircuitBreakerCounterStoreTest {
   fun `trips open after threshold failures`() = runTest {
     val cb =
         CircuitBreakerCounterStore(
-            failingStore(), failureThreshold = 3, resetTimeout = 30.seconds, clock = clock)
+            failingStore(),
+            failureThreshold = 3,
+            resetTimeout = 30.seconds,
+            clock = clock,
+        )
     repeat(3) { cb.evaluate("key", openPolicy) }
     val result = cb.evaluate("key", openPolicy)
     assertInstanceOf(Allowed::class.java, result) // fail-open policy
   }
 
   @Test
-  fun `fail-closed policy gets Denied when circuit is open`() = runTest {
+  fun `fail-closed policy gets Failed when circuit is open`() = runTest {
     val cb =
         CircuitBreakerCounterStore(
-            failingStore(), failureThreshold = 3, resetTimeout = 30.seconds, clock = clock)
+            failingStore(),
+            failureThreshold = 3,
+            resetTimeout = 30.seconds,
+            clock = clock,
+        )
     repeat(3) { cb.evaluate("key", closedPolicy) }
     val result = cb.evaluate("key", closedPolicy)
-    assertInstanceOf(Denied::class.java, result)
+    assertInstanceOf(Failed::class.java, result)
   }
 
   @Test
@@ -75,13 +87,18 @@ class CircuitBreakerCounterStoreTest {
     val switchable =
         object : CounterStore {
           override suspend fun evaluate(key: String, policy: Policy): RateLimitResponse {
-            return if (shouldFail) Failed(reason = "down") else Allowed(9u, policy.window)
+            return if (shouldFail) Failed(reason = "down", 1.seconds)
+            else Allowed(9u, policy.window)
           }
         }
 
     val cb =
         CircuitBreakerCounterStore(
-            switchable, failureThreshold = 3, resetTimeout = 10.seconds, clock = clock)
+            switchable,
+            failureThreshold = 3,
+            resetTimeout = 10.seconds,
+            clock = clock,
+        )
     cb.evaluate("key", openPolicy)
     cb.evaluate("key", openPolicy)
     shouldFail = false
@@ -99,13 +116,18 @@ class CircuitBreakerCounterStoreTest {
     val switchable =
         object : CounterStore {
           override suspend fun evaluate(key: String, policy: Policy): RateLimitResponse {
-            return if (shouldFail) Failed(reason = "down") else Allowed(9u, policy.window)
+            return if (shouldFail) Failed(reason = "down", 1.seconds)
+            else Allowed(9u, policy.window)
           }
         }
 
     val cb =
         CircuitBreakerCounterStore(
-            switchable, failureThreshold = 3, resetTimeout = 10.seconds, clock = clock)
+            switchable,
+            failureThreshold = 3,
+            resetTimeout = 10.seconds,
+            clock = clock,
+        )
     repeat(3) { cb.evaluate("key", openPolicy) }
     clock.advance(11.seconds)
     shouldFail = false
@@ -119,7 +141,11 @@ class CircuitBreakerCounterStoreTest {
   fun `half-open probe failure re-opens circuit`() = runTest {
     val cb =
         CircuitBreakerCounterStore(
-            failingStore(), failureThreshold = 3, resetTimeout = 10.seconds, clock = clock)
+            failingStore(),
+            failureThreshold = 3,
+            resetTimeout = 10.seconds,
+            clock = clock,
+        )
     repeat(3) { cb.evaluate("key", openPolicy) }
     clock.advance(11.seconds)
     cb.evaluate("key", openPolicy)
