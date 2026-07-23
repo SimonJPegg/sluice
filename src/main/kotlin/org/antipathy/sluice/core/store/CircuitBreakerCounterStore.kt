@@ -5,8 +5,8 @@ import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Instant
 import org.antipathy.sluice.core.model.Allowed
-import org.antipathy.sluice.core.model.Denied
 import org.antipathy.sluice.core.model.Failed
+import org.antipathy.sluice.core.model.FailureCategory
 import org.antipathy.sluice.core.model.RateLimitResponse
 import org.antipathy.sluice.core.policy.FailType
 import org.antipathy.sluice.core.policy.Policy
@@ -27,7 +27,7 @@ class CircuitBreakerCounterStore(
   private enum class State {
     CLOSED,
     OPEN,
-    HALF_OPEN
+    HALF_OPEN,
   }
 
   // Hold one atomic value rather than two
@@ -75,13 +75,14 @@ class CircuitBreakerCounterStore(
       // we can't calculate the values, so tell the caller to wait the remainder of this window
       Allowed(0u, policy.window)
     } else {
-      Denied(policy.window)
+      Failed("circuit breaker activated", policy.window, FailureCategory.CIRCUIT_OPEN)
     }
   }
 
   private fun recordFailure() {
-    val updated =
-        state.updateAndGet { it.copy(failures = it.failures + 1, lastFailure = clock.now()) }
+    val updated = state.updateAndGet {
+      it.copy(failures = it.failures + 1, lastFailure = clock.now())
+    }
     if (updated.failures == failureThreshold) {
       logger.error("Circuit breaker tripped after {} failures", updated.failures)
     }

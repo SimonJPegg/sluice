@@ -36,7 +36,8 @@ class YamlPolicyRegistry(private val policyDirectory: String) : PolicyRegistry {
     val policyDir = Paths.get(policyDirectory)
     if (!policyDir.exists() || !policyDir.isDirectory()) {
       throw InvalidPolicyConfigurationException(
-          "Policy directory $policyDirectory does not exist or is not a directory")
+          "Policy directory $policyDirectory does not exist or is not a directory"
+      )
     }
     val entries = policyDir.listDirectoryEntries()
     if (entries.isEmpty()) {
@@ -49,7 +50,8 @@ class YamlPolicyRegistry(private val policyDirectory: String) : PolicyRegistry {
   private fun constructRegistryFromPolicies(policies: List<Policy>): Map<String, Policy> {
     if (policies.isEmpty()) {
       throw InvalidPolicyConfigurationException(
-          "No policies found in policy directory $policyDirectory")
+          "No policies found in policy directory $policyDirectory"
+      )
     }
     return policies.fold(emptyMap()) { acc, policy ->
       if (acc.containsKey(policy.id)) {

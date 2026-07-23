@@ -12,7 +12,7 @@ private val identifierPattern = Regex("^[a-zA-Z0-9\\-_:]+$")
 @Suppress("CyclomaticComplexMethod") // linear chain, each branch is independent
 fun RateLimitRequest.validate(
     policyRegistry: PolicyRegistry,
-    maxIdentifierLength: Int
+    maxIdentifierLength: Int,
 ): ValidationResult =
     when {
       key.isBlank() -> MissingKeyRequest()

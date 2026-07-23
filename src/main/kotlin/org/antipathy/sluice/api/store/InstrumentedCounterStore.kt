@@ -9,7 +9,7 @@ import org.antipathy.sluice.core.store.CounterStore
 /** Decorator that records duration and errors for every store call without touching core. */
 internal class InstrumentedCounterStore(
     private val delegate: CounterStore,
-    private val metrics: Metrics
+    private val metrics: Metrics,
 ) : CounterStore {
 
   @Suppress("TooGenericExceptionCaught") // decorator must observe all failures regardless of store

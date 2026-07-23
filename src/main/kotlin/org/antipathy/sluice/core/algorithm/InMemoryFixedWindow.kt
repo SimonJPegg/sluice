@@ -22,7 +22,8 @@ class InMemoryFixedWindow(private val clock: Clock = Clock.System) : InMemoryAlg
 
   override suspend fun calculate(key: String, policy: Policy): RateLimitResponse {
     // pre-assign a value, to avoid null handling
-    var result: RateLimitResponse = Failed(reason = "unexpected: compute lambda did not execute")
+    var result: RateLimitResponse =
+        Failed(reason = "unexpected: compute lambda did not execute", policy.window)
     counters.compute(key) { _, existing ->
       val currentTime = clock.now()
       val expires = currentTime.plus(policy.window)

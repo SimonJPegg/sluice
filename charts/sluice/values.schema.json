@@ -122,6 +122,11 @@
           "minimum": 1,
           "description": "Maximum length of the rate limit key identifier"
         },
+        "maxConcurrentRequests": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum concurrent requests before load shedding (omit to disable)"
+        },
         "circuitBreaker": {
           "type": "object",
           "required": ["enabled"],

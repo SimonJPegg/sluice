@@ -38,7 +38,8 @@ class InMemoryTokenBucketTest {
     assertEquals(defaultPolicy.limit - 1u, result.remaining)
     assertEquals(
         (defaultPolicy.window.inWholeSeconds.toInt() / defaultPolicy.limit.toInt()).seconds,
-        result.resetIn)
+        result.resetIn,
+    )
   }
 
   @Test
@@ -55,7 +56,8 @@ class InMemoryTokenBucketTest {
     val result = assertInstanceOf(Denied::class.java, algorithm.calculate(key, defaultPolicy))
     assertEquals(
         (defaultPolicy.window.inWholeSeconds.toInt() / defaultPolicy.limit.toInt()).seconds,
-        result.retryAfter)
+        result.retryAfter,
+    )
   }
 
   @Test
@@ -72,7 +74,8 @@ class InMemoryTokenBucketTest {
     val deny = assertInstanceOf(Denied::class.java, algorithm.calculate(key, defaultPolicy))
     assertEquals(
         (defaultPolicy.window.inWholeSeconds.toInt() / defaultPolicy.limit.toInt()).seconds,
-        deny.retryAfter)
+        deny.retryAfter,
+    )
     clock.advance(1.seconds)
     val result = assertInstanceOf(Allowed::class.java, algorithm.calculate(key, defaultPolicy))
     assertEquals(0u, result.remaining)

@@ -37,7 +37,8 @@ class HealthStatusRouteTest : RedisTest() {
               StoreStatus(
                   type = "redis",
                   status = "connected",
-                  latencyMS = start.elapsedNow().inWholeMilliseconds)
+                  latencyMS = start.elapsedNow().inWholeMilliseconds,
+              )
             } catch (_: RedisException) {
               StoreStatus(
                   type = "redis",
@@ -45,7 +46,8 @@ class HealthStatusRouteTest : RedisTest() {
                   latencyMS = 0,
               )
             }
-          })
+          }
+      )
     }
     val response =
         client.get("/health/status") {
@@ -70,7 +72,8 @@ class HealthStatusRouteTest : RedisTest() {
               StoreStatus(
                   type = "redis",
                   status = "connected",
-                  latencyMS = start.elapsedNow().inWholeMilliseconds)
+                  latencyMS = start.elapsedNow().inWholeMilliseconds,
+              )
             } catch (_: RedisException) {
               StoreStatus(
                   type = "redis",
@@ -78,7 +81,8 @@ class HealthStatusRouteTest : RedisTest() {
                   latencyMS = 0,
               )
             }
-          })
+          }
+      )
     }
     connection.close()
     val response =
@@ -103,7 +107,8 @@ class HealthStatusRouteTest : RedisTest() {
                 status = "connected",
                 latencyMS = 0,
             )
-          })
+          }
+      )
     }
     val response =
         client.get("/health/status") {

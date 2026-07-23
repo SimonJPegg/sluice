@@ -9,6 +9,7 @@ rate-limit:
     location: /app/policies
   backend:
     redis-uri: redis://redis:6379
+  # max-concurrent-requests: 100
   circuit-breaker:
     threshold: 5
     timeout-ms: 30000

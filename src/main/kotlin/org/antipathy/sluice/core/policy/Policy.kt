@@ -8,7 +8,7 @@ import org.antipathy.sluice.core.exceptions.InvalidPolicyConfigurationException
 @Serializable(with = FailTypeSerializer::class)
 enum class FailType {
   OPEN,
-  CLOSED
+  CLOSED,
 }
 
 /** Algorithm choice lives in config, not code. */
@@ -17,7 +17,7 @@ enum class AlgorithmType {
   FIXED_WINDOW,
   SLIDING_WINDOW_LOG,
   SLIDING_WINDOW_COUNTER,
-  TOKEN_BUCKET
+  TOKEN_BUCKET,
 }
 
 /** Everything about how a rate limit behaves. Validated at construction, not at evaluation. */
@@ -27,7 +27,7 @@ data class Policy(
     @Serializable(with = UIntSerializer::class) val limit: UInt,
     val failType: FailType,
     @Serializable(with = ISOFormatDurationSerializer::class) val window: Duration,
-    val algorithmType: AlgorithmType
+    val algorithmType: AlgorithmType,
 ) {
 
   fun validate(): Policy {

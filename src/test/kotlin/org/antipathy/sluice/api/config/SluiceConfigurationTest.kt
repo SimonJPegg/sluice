@@ -107,7 +107,9 @@ class SluiceConfigurationTest {
     val exception = assertThrows<ConfigurationException> { SluiceConfiguration.from(config) }
     assertTrue(
         exception.message!!.contains(
-            "rate-limit.circuit-breaker requires both failure-threshold and timeout-ms, or neither"))
+            "rate-limit.circuit-breaker requires both failure-threshold and timeout-ms, or neither"
+        )
+    )
   }
 
   @Test
@@ -117,7 +119,9 @@ class SluiceConfigurationTest {
     val exception = assertThrows<ConfigurationException> { SluiceConfiguration.from(config) }
     assertTrue(
         exception.message!!.contains(
-            "rate-limit.circuit-breaker.threshold must be a valid integer, got: 'Skyrim belongs to the Nords'"))
+            "rate-limit.circuit-breaker.threshold must be a valid integer, got: 'Skyrim belongs to the Nords'"
+        )
+    )
   }
 
   @Test

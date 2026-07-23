@@ -27,7 +27,7 @@ fun Application.rateLimit(
     store: CounterStore,
     policyRegistry: PolicyRegistry,
     maxIdentifierLength: Int,
-    metrics: Metrics
+    metrics: Metrics,
 ) {
 
   routing {
@@ -55,7 +55,8 @@ fun Application.rateLimit(
               result.key,
               result.policy.id,
               processed.javaClass.simpleName,
-              start.elapsedNow().inWholeMilliseconds)
+              start.elapsedNow().inWholeMilliseconds,
+          )
           metrics.trackEvaluation(result.policy, processed, start.elapsedNow())
         }
       }

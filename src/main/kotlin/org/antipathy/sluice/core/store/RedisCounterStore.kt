@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory
  */
 class RedisCounterStore(
     private val algorithms: Map<AlgorithmType, RedisAlgorithm>,
-    private val connectionTimeout: Duration = 50.milliseconds
+    private val connectionTimeout: Duration = 50.milliseconds,
 ) : CounterStore {
 
   private val logger = LoggerFactory.getLogger(RedisCounterStore::class.java)
@@ -31,7 +31,7 @@ class RedisCounterStore(
         algorithms.getValue(policy.algorithmType).calculate(key, policy)
       }
     } catch (_: NoSuchElementException) {
-      Failed(reason = "Algorithm ${policy.algorithmType} has not been implemented yet")
+      Failed(reason = "Algorithm ${policy.algorithmType} has not been implemented yet", null)
     } catch (e: RedisException) {
       // can't calculate values, fail per policy
       if (policy.failType == FailType.OPEN) {

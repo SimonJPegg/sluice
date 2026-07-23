@@ -78,7 +78,9 @@ class InMemorySlidingWindowCounterTest {
         clock.advance(defaultPolicy.window + (defaultPolicy.window / 2))
         val result =
             Assertions.assertInstanceOf(
-                Allowed::class.java, algorithm.calculate(key, defaultPolicy))
+                Allowed::class.java,
+                algorithm.calculate(key, defaultPolicy),
+            )
         assertEquals((defaultPolicy.limit / 2u) - 1u, result.remaining)
       }
 
