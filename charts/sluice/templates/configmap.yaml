@@ -27,6 +27,10 @@ data:
     rate-limit:
       policies:
         location: /app/policies
+      {{- if .Values.auth.enabled }}
+      auth:
+        api-key: "${SLUICE_API_KEY}"
+      {{- end }}
       backend:
         redis-uri: redis://{{ include "sluice.fullname" . }}-redis:{{ .Values.redis.port }}
       {{- if .Values.rateLimiting.circuitBreaker.enabled }}

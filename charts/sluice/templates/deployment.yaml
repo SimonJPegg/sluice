@@ -26,6 +26,14 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - "-config=/app/config/application.yaml"
+          {{- if .Values.auth.enabled }}
+          env:
+            - name: SLUICE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.auth.existingSecret }}
+                  key: api-key
+          {{- end }}
           {{- with .Values.securityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}

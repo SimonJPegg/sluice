@@ -60,7 +60,7 @@ class RateLimitRouteTest {
       meterBinders =
           listOf(JvmMemoryMetrics(), JvmGcMetrics(), JvmThreadMetrics(), ProcessorMetrics())
     }
-    rateLimit(store, policyRegistry, maxIdentifierLength, metrics)
+    rateLimit(store, policyRegistry, maxIdentifierLength, false, metrics)
   }
 
   @Test

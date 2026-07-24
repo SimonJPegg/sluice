@@ -1,8 +1,33 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["image", "service", "rateLimiting", "policies", "redis"],
+  "required": ["image", "service", "rateLimiting", "policies", "redis", "auth"],
   "properties": {
+    "auth": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable API key authentication on the /check endpoint"
+        },
+        "existingSecret": {
+          "type": "string",
+          "description": "Name of an existing Kubernetes Secret containing the API key (must have a key named 'api-key')"
+        }
+      },
+      "if": {
+        "properties": { "enabled": { "const": true } }
+      },
+      "then": {
+        "required": ["existingSecret"],
+        "properties": {
+          "existingSecret": {
+            "minLength": 1
+          }
+        }
+      }
+    },
     "replicaCount": {
       "type": "integer",
       "minimum": 1,

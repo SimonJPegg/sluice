@@ -8,6 +8,9 @@ import io.ktor.server.application.ApplicationStopping
 import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.application.hooks.MonitoringEvent
 import io.ktor.server.application.install
+import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.UserIdPrincipal
+import io.ktor.server.auth.bearer
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
 import io.ktor.server.netty.EngineMain
 import io.ktor.server.plugins.callid.CallId
@@ -209,7 +212,24 @@ fun Application.module() {
 
   val finalStore = InstrumentedCounterStore(withThrottle, metrics)
 
+  auth(config.apiKey)
   healthCheck(statusChecker)
-  rateLimit(finalStore, policyRegistry, config.maxIdentifierLength, metrics)
+  rateLimit(finalStore, policyRegistry, config.maxIdentifierLength, config.apiKey != null, metrics)
   metrics { appMicrometerRegistry.scrape() }
+}
+
+private fun Application.auth(apiKey: String?) {
+  if (apiKey != null) {
+    install(Authentication) {
+      bearer("api-key") {
+        authenticate { token ->
+          if (token.token == apiKey) {
+            UserIdPrincipal("authenticated-client")
+          } else {
+            null
+          }
+        }
+      }
+    }
+  }
 }

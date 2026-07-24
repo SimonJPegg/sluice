@@ -2,9 +2,11 @@ package org.antipathy.sluice.api.routes
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
+import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import kotlin.time.TimeSource
@@ -27,10 +29,11 @@ fun Application.rateLimit(
     store: CounterStore,
     policyRegistry: PolicyRegistry,
     maxIdentifierLength: Int,
+    enableAuthentication: Boolean,
     metrics: Metrics,
 ) {
 
-  routing {
+  val routeBuilder: Route.() -> Unit = {
     post("/check") {
       val start = TimeSource.Monotonic.markNow()
       val request =
@@ -60,6 +63,14 @@ fun Application.rateLimit(
           metrics.trackEvaluation(result.policy, processed, start.elapsedNow())
         }
       }
+    }
+  }
+
+  routing {
+    if (enableAuthentication) {
+      authenticate("api-key", build = routeBuilder)
+    } else {
+      routeBuilder()
     }
   }
 }

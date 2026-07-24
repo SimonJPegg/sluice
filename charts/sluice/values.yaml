@@ -73,6 +73,14 @@ readinessProbe:
   initialDelaySeconds: 15
   periodSeconds: 5
 
+# -- Authentication configuration
+auth:
+  # -- Enable API key authentication on the /check endpoint
+  enabled: false
+  # -- Name of an existing Kubernetes Secret containing the API key
+  # The secret must have a key named `api-key`
+  existingSecret: ""
+
 # -- Rate limit configuration
 rateLimiting:
   # -- Max identifier length for key validation

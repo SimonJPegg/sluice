@@ -71,11 +71,11 @@ Prometheus metrics on `/metrics` — outcomes, latency, errors, store health
 
 ## Roadmap
 
-### v0.1.0 — (current)
+### v0.1.0 
 -~~Backpressure / load shedding under degraded Redis~~
 
-### v0.2.0 — Security
-- Authentication on `/check`
+### v0.2.0 — (current)
+- ~~Authentication on `/check`~~
 
 ### v1.0.0 — Confidence
 - Load testing with k6 (published baselines)

@@ -15,7 +15,7 @@ Deploys sluice and a single-node Redis to Kubernetes. That's it.
 From GHCR (OCI registry):
 
 ```bash
-helm install sluice oci://ghcr.io/simonjpegg/charts/sluice --version 0.1.0
+helm install sluice oci://ghcr.io/simonjpegg/charts/sluice --version 0.2.0
 ```
 
 From source:
@@ -27,8 +27,8 @@ helm install sluice ./charts/sluice
 With overrides:
 
 ```bash
-helm install sluice oci://ghcr.io/simonjpegg/charts/sluice --version 0.1.0 \
-  --set image.tag=0.1.0
+helm install sluice oci://ghcr.io/simonjpegg/charts/sluice --version 0.2.0 \
+  --set image.tag=0.2.0
 ```
 
 ## Test
@@ -47,6 +47,29 @@ redis:
 ```
 
 No Redis resources created. Wire sluice to your external instance via the generated app config or mount your own.
+
+## Authentication
+
+Off by default. When enabled, the `/check` endpoint requires a Bearer token matching the pre-shared API key. Health and metrics endpoints remain unauthenticated.
+
+### Create the secret
+
+```bash
+kubectl create secret generic sluice-api-key \
+  --from-literal=api-key=$(openssl rand -hex 32)
+```
+
+### Enable in values
+
+```yaml
+auth:
+  enabled: true
+  existingSecret: sluice-api-key
+```
+
+The chart mounts the secret as an environment variable. Sluice reads it at startup. Clients must send `Authorization: Bearer <key>` on every `/check` request.
+
+Schema enforces that `existingSecret` is non-empty when `auth.enabled` is true. The chart does not create the secret — you manage it separately.
 
 ## Policies
 
@@ -96,6 +119,8 @@ Scrapes `/metrics` on the service port. Add labels if your Prometheus uses label
 
 | Key | Default                     | Description |
 |-----|-----------------------------|-------------|
+| `auth.enabled` | `false`                     | Enable API key auth on `/check` |
+| `auth.existingSecret` | `""`                        | K8s Secret name (must contain `api-key` key) |
 | `replicaCount` | `1`                         | Sluice replicas |
 | `image.repository` | `ghcr.io/simonjpegg/sluice` | Container image |
 | `image.tag` | `""` (uses appVersion)      | Image tag |

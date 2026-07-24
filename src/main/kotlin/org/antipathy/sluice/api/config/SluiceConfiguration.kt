@@ -21,6 +21,7 @@ data class SluiceConfiguration(
     val maxIdentifierLength: Int = 256,
     val maxConcurrentRequests: Int?,
     val circuitBreaker: CircuitBreaker?,
+    val apiKey: String?,
 ) {
 
   companion object {
@@ -36,6 +37,7 @@ data class SluiceConfiguration(
       val maxIdentifierLength = parseMaxIdentifierLength(config, exceptions)
       val maxConcurrentRequests = parseMaxConcurrentRequests(config)
       val circuitBreaker = parseCircuitBreaker(config)
+      val apiKey = parseApiKey(config)
 
       if (exceptions.isNotEmpty()) {
         logger.error("Configuration errors detected")
@@ -53,7 +55,12 @@ data class SluiceConfiguration(
           maxIdentifierLength,
           maxConcurrentRequests,
           circuitBreaker,
+          apiKey,
       )
+    }
+
+    private fun parseApiKey(config: ApplicationConfig): String? {
+      return config.propertyOrNull("rate-limit.auth.api-key")?.getString()
     }
 
     private fun parseRedisUrl(
