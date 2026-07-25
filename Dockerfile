@@ -7,6 +7,7 @@ FROM eclipse-temurin:21-jre-alpine
 RUN addgroup -S sluice && adduser -S sluice -G sluice
 WORKDIR /app
 COPY --from=build /build/build/libs/sluice-all.jar /app/sluice.jar
+RUN mkdir -p /app/logs && chown sluice:sluice /app/logs
 USER sluice
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=3s --retries=3 CMD wget -q --spider http://localhost:8080/health/live || exit 1
