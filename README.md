@@ -48,7 +48,7 @@ Kotlin 2.x, Ktor, Lettuce, Micrometer. JVM 21. Gradle.
 
 ## Design
 
-![Architecture](docs/hld.drawio.svg)
+![Architecture](docs/images/hld.drawio.svg)
 
 - Sealed types enforce exhaustive handling at every decision point — validation, evaluation, and response mapping. No exceptions for control flow
 - Atomic counters via Redis Lua scripts. In-memory uses `ConcurrentHashMap.compute`
@@ -67,7 +67,7 @@ Architecture decisions documented in `docs/decisions/`.
 
 Prometheus metrics on `/metrics` — outcomes, latency, errors, store health
 
- <img src="docs/metrics.png" alt="Grafana Dashboard" width="80%">
+ <img src="docs/images/metrics.png" alt="Grafana Dashboard" width="80%">
 
 ## Roadmap
 
