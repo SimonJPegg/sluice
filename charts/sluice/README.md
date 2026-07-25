@@ -12,10 +12,12 @@ Deploys sluice and a single-node Redis to Kubernetes. That's it.
 
 ## Install
 
-From GHCR (OCI registry):
+From Cloudsmith:
 
 ```bash
-helm install sluice oci://ghcr.io/simonjpegg/charts/sluice --version 0.2.0
+helm repo add sluice https://dl.cloudsmith.io/public/antipathy-org/sluice/helm/charts/
+helm repo update
+helm install sluice sluice/sluice --version 0.2.0
 ```
 
 From source:
@@ -27,7 +29,7 @@ helm install sluice ./charts/sluice
 With overrides:
 
 ```bash
-helm install sluice oci://ghcr.io/simonjpegg/charts/sluice --version 0.2.0 \
+helm install sluice sluice/sluice --version 0.2.0 \
   --set image.tag=0.2.0
 ```
 
@@ -122,7 +124,7 @@ Scrapes `/metrics` on the service port. Add labels if your Prometheus uses label
 | `auth.enabled` | `false`                     | Enable API key auth on `/check` |
 | `auth.existingSecret` | `""`                        | K8s Secret name (must contain `api-key` key) |
 | `replicaCount` | `1`                         | Sluice replicas |
-| `image.repository` | `ghcr.io/simonjpegg/sluice` | Container image |
+| `image.repository` | `docker.cloudsmith.io/antipathy-org/sluice/sluice` | Container image |
 | `image.tag` | `""` (uses appVersion)      | Image tag |
 | `image.pullPolicy` | `IfNotPresent`              | Pull policy |
 | `service.type` | `ClusterIP`                 | Service type |
