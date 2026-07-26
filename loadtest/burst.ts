@@ -10,10 +10,10 @@ module.exports.options = {
       preAllocatedVUs: 50,
       maxVUs: 200,
       stages: [
-        { duration: '1m', target: 100 },   // baseline at 100 req/s
-        { duration: '10s', target: 500 },   // spike to 500 req/s
-        { duration: '30s', target: 500 },   // hold the burst
-        { duration: '10s', target: 100 },   // drop back
+        { duration: '1m', target: 500 },   // baseline at 100 req/s
+        { duration: '10s', target: 1000 },   // spike to 500 req/s
+        { duration: '30s', target: 1000 },   // hold the burst
+        { duration: '10s', target: 500 },   // drop back
         { duration: '1m', target: 100 },    // recovery
       ],
     },
