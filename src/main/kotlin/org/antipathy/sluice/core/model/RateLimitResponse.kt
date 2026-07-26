@@ -26,5 +26,7 @@ data class Failed(
 enum class FailureCategory {
   OVERLOADED, // we're load shedding
   CIRCUIT_OPEN, // circuit breaker has tripped
+  STORE_UNAVAILABLE, // Huston, we have a problem
+  STORE_TIMEOUT, // same, but smaller?
   SEE_REASON, // generic errors
 }

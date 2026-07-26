@@ -49,6 +49,7 @@ import org.antipathy.sluice.core.exceptions.RedisScriptMissingException
 import org.antipathy.sluice.core.policy.YamlPolicyRegistry
 import org.antipathy.sluice.core.store.CircuitBreakerCounterStore
 import org.antipathy.sluice.core.store.CounterStore
+import org.antipathy.sluice.core.store.FailureModeCounterStore
 import org.antipathy.sluice.core.store.InMemoryCounterStore
 import org.antipathy.sluice.core.store.RedisCounterStore
 import org.antipathy.sluice.core.store.ThrottledCounterStore
@@ -201,16 +202,25 @@ fun Application.module() {
         inMemoryStore(policyContext)
       }
 
+  // Why take 1 InstrumentedCounterStore when you can have 2!
+  // inner tracks raw store health
+  // outer tracks what the user actually got.
   val withCircuitBreaker =
       config.circuitBreaker?.let {
-        CircuitBreakerCounterStore(baseStore, it.failureThreshold, it.resetTimeout)
-      } ?: baseStore
+        CircuitBreakerCounterStore(
+            InstrumentedCounterStore(baseStore, metrics, "store"),
+            it.failureThreshold,
+            it.resetTimeout,
+        )
+      } ?: InstrumentedCounterStore(baseStore, metrics, "store")
+
+  val withFailureMode = FailureModeCounterStore(withCircuitBreaker)
 
   val withThrottle =
-      config.maxConcurrentRequests?.let { ThrottledCounterStore(it, withCircuitBreaker) }
-          ?: withCircuitBreaker
+      config.maxConcurrentRequests?.let { ThrottledCounterStore(it, withFailureMode) }
+          ?: withFailureMode
 
-  val finalStore = InstrumentedCounterStore(withThrottle, metrics)
+  val finalStore = InstrumentedCounterStore(withThrottle, metrics, "chain")
 
   auth(config.apiKey)
   healthCheck(statusChecker)

@@ -38,7 +38,7 @@ class InstrumentedCounterStoreTest {
   fun `should record store duration on successful evaluation`() = runTest {
     coEvery { delegate.evaluate(any(), any()) } returns Allowed(5u, 60.seconds)
     assertInstanceOf<Allowed>(store.evaluate("key", defaaltPolicy))
-    coVerify { metrics.trackStoreDuration(eq("evaluate"), any()) }
+    coVerify { metrics.trackStoreDuration(eq("store"), any()) }
   }
 
   @Test
@@ -47,7 +47,7 @@ class InstrumentedCounterStoreTest {
     try {
       store.evaluate("key", defaaltPolicy)
     } catch (_: RuntimeException) {}
-    coVerify { metrics.trackStoreDuration(eq("evaluate"), any()) }
+    coVerify { metrics.trackStoreDuration(eq("store"), any()) }
   }
 
   @Test

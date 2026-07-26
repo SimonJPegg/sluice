@@ -10,6 +10,7 @@ import org.antipathy.sluice.core.store.CounterStore
 internal class InstrumentedCounterStore(
     private val delegate: CounterStore,
     private val metrics: Metrics,
+    private val layer: String = "store",
 ) : CounterStore {
 
   @Suppress("TooGenericExceptionCaught") // decorator must observe all failures regardless of store
@@ -18,10 +19,10 @@ internal class InstrumentedCounterStore(
     val start = TimeSource.Monotonic.markNow()
     return try {
       val result = delegate.evaluate(key, policy)
-      metrics.trackStoreDuration("evaluate", start.elapsedNow())
+      metrics.trackStoreDuration(layer, start.elapsedNow())
       result
     } catch (e: Exception) {
-      metrics.trackStoreDuration("evaluate", start.elapsedNow())
+      metrics.trackStoreDuration(layer, start.elapsedNow())
       metrics.trackStoreError(e::class.simpleName ?: "unknown")
       throw e
     }
