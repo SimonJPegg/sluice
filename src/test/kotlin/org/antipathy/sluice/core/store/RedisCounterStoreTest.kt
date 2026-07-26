@@ -8,6 +8,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.antipathy.sluice.core.algorithm.RedisFixedWindow
+import org.antipathy.sluice.core.algorithm.RedisSlidingWindowCounter
 import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
 import org.antipathy.sluice.core.model.Allowed
 import org.antipathy.sluice.core.model.Failed
@@ -19,6 +20,7 @@ import org.antipathy.sluice.redis.RedisTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertInstanceOf
 
 class RedisCounterStoreTest : RedisTest() {
 
@@ -33,7 +35,7 @@ class RedisCounterStoreTest : RedisTest() {
 
   @Test
   fun `validate testcontainer is working as expected`() {
-    val commands = connection.sync()
+    val commands = redisConnection.sync()
     assertEquals("PONG", commands.ping())
   }
 
@@ -41,7 +43,7 @@ class RedisCounterStoreTest : RedisTest() {
   fun `unimplemented algorithm - returns Failed`() = runTest {
     val store =
         RedisCounterStore(
-            mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection)))
+            mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(redisConnection)))
         )
     val testKey = "test-key"
     assertInstanceOf(
@@ -68,7 +70,7 @@ class RedisCounterStoreTest : RedisTest() {
         )
     val testKey = "test-key"
     val policy = defaultPolicy.copy(failType = FailType.CLOSED)
-    connection.close()
+    redisConnection.close()
     val result = assertInstanceOf(Failed::class.java, store.evaluate(testKey, policy))
 
     assertEquals(FailureCategory.STORE_TIMEOUT, result.failureCategory)
@@ -78,12 +80,40 @@ class RedisCounterStoreTest : RedisTest() {
   fun `store returns failed when connection unavailable`() = runTest {
     val store =
         RedisCounterStore(
-            mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection)))
+            mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(redisConnection)))
         )
     val testKey = "test-key"
     val policy = defaultPolicy.copy(failType = FailType.CLOSED)
-    connection.close()
+    redisConnection.close()
     val result = assertInstanceOf(Failed::class.java, store.evaluate(testKey, policy))
     assertEquals(FailureCategory.STORE_UNAVAILABLE, result.failureCategory)
+  }
+
+  @Test
+  fun `same key with different policies gets independent counters`() = runBlocking {
+    val store =
+        RedisCounterStore(
+            mapOf(
+                AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(redisConnection)),
+                AlgorithmType.SLIDING_WINDOW_COUNTER to
+                    RedisSlidingWindowCounter(ScriptLoader(redisConnection)),
+            )
+        )
+    val testKey = "test-key"
+
+    val result1 = assertInstanceOf<Allowed>(store.evaluate(testKey, defaultPolicy))
+    val result2 =
+        assertInstanceOf<Allowed>(
+            store.evaluate(
+                testKey,
+                defaultPolicy.copy(
+                    algorithmType = AlgorithmType.SLIDING_WINDOW_COUNTER,
+                    id = "test-policy2",
+                ),
+            )
+        )
+
+    assertEquals(defaultPolicy.limit - 1u, result1.remaining)
+    assertEquals(defaultPolicy.limit - 1u, result2.remaining)
   }
 }

@@ -43,7 +43,7 @@ class RateLimitEndToEndTest : RedisTest() {
     val requiredAlgorithms = policyRegistry.requiredAlgorithms()
 
     val maxIdentifierLength = 256
-    val scriptLoader = ScriptLoader(connection)
+    val scriptLoader = ScriptLoader(redisConnection)
     val store =
         RedisCounterStore(requiredAlgorithms.associate { it to redisAlgorithm(it, scriptLoader) })
     install(ContentNegotiation) { json() }

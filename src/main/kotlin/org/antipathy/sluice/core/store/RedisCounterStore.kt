@@ -26,7 +26,7 @@ class RedisCounterStore(
   override suspend fun evaluate(key: String, policy: Policy): RateLimitResponse {
     return try {
       withTimeout(connectionTimeout) {
-        algorithms.getValue(policy.algorithmType).calculate(key, policy)
+        algorithms.getValue(policy.algorithmType).calculate("${policy.id}:${key}", policy)
       }
     } catch (_: NoSuchElementException) {
       Failed(reason = "Algorithm ${policy.algorithmType} has not been implemented yet", null)

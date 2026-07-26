@@ -31,7 +31,7 @@ class RedisSlidingWindowLogTest : RedisTest() {
 
   @Test
   fun `first request returns Allowed with remaining = limit - 1`() = runBlocking {
-    val algorithm = RedisSlidingWindowLog(ScriptLoader(connection))
+    val algorithm = RedisSlidingWindowLog(ScriptLoader(redisConnection))
     val key = "test-key"
     val result = assertInstanceOf(Allowed::class.java, algorithm.calculate(key, defaultPolicy))
     assertEquals(defaultPolicy.limit - 1u, result.remaining)
@@ -40,7 +40,7 @@ class RedisSlidingWindowLogTest : RedisTest() {
 
   @Test
   fun `multiple requests within same window, remaining decreases`() = runBlocking {
-    val algorithm = RedisSlidingWindowLog(ScriptLoader(connection))
+    val algorithm = RedisSlidingWindowLog(ScriptLoader(redisConnection))
     val key = "test-key"
     repeat(defaultPolicy.limit.toInt()) { i ->
       val result = algorithm.calculate(key, defaultPolicy)
@@ -51,7 +51,7 @@ class RedisSlidingWindowLogTest : RedisTest() {
 
   @Test
   fun `at limit, next request returns Denied`() = runBlocking {
-    val algorithm = RedisSlidingWindowLog(ScriptLoader(connection))
+    val algorithm = RedisSlidingWindowLog(ScriptLoader(redisConnection))
     val key = "test-key"
     repeat(defaultPolicy.limit.toInt()) { i ->
       val result = algorithm.calculate(key, defaultPolicy)
@@ -64,7 +64,7 @@ class RedisSlidingWindowLogTest : RedisTest() {
 
   @Test
   fun `denied request returns retryAfter as time until oldest entry expires`() = runBlocking {
-    val algorithm = RedisSlidingWindowLog(ScriptLoader(connection))
+    val algorithm = RedisSlidingWindowLog(ScriptLoader(redisConnection))
     val key = "test-key"
     repeat(defaultPolicy.limit.toInt()) { i ->
       val result = algorithm.calculate(key, defaultPolicy)
@@ -80,7 +80,7 @@ class RedisSlidingWindowLogTest : RedisTest() {
 
   @Test
   fun `requests outside window are pruned, counter resets after window passes`() = runBlocking {
-    val algorithm = RedisSlidingWindowLog(ScriptLoader(connection))
+    val algorithm = RedisSlidingWindowLog(ScriptLoader(redisConnection))
     val key = "test-key"
     repeat(defaultPolicy.limit.toInt()) { i ->
       val result = algorithm.calculate(key, defaultPolicy)
@@ -96,7 +96,7 @@ class RedisSlidingWindowLogTest : RedisTest() {
   @Test
   fun `sliding precision, request mid-window only counts entries within rolling window`() =
       runBlocking {
-        val algorithm = RedisSlidingWindowLog(ScriptLoader(connection))
+        val algorithm = RedisSlidingWindowLog(ScriptLoader(redisConnection))
         val key = "test-key"
         repeat(defaultPolicy.limit.toInt()) { i ->
           val result = algorithm.calculate(key, defaultPolicy)
@@ -117,7 +117,7 @@ class RedisSlidingWindowLogTest : RedisTest() {
   @Test
   fun `expired entries cleaned up, list does not grow unbounded across windows`() = runBlocking {
     // kept for consistency with redis tests. this was proven already by the sliding precision test
-    val algorithm = RedisSlidingWindowLog(ScriptLoader(connection))
+    val algorithm = RedisSlidingWindowLog(ScriptLoader(redisConnection))
     val key = "test-key"
     repeat(defaultPolicy.limit.toInt()) { i ->
       val result = algorithm.calculate(key, defaultPolicy)
@@ -133,7 +133,7 @@ class RedisSlidingWindowLogTest : RedisTest() {
   @Test
   fun `high traffic key, many requests within window, memory grows linearly`() = runBlocking {
     // kept for consistency with redis tests. this was proven already by the sliding precision test
-    val algorithm = RedisSlidingWindowLog(ScriptLoader(connection))
+    val algorithm = RedisSlidingWindowLog(ScriptLoader(redisConnection))
     val key = "test-key"
     repeat(defaultPolicy.limit.toInt()) { i ->
       val result = algorithm.calculate(key, defaultPolicy)
@@ -149,7 +149,7 @@ class RedisSlidingWindowLogTest : RedisTest() {
   @Test
   fun `concurrent access, coroutines hammering same key, total allowed equals limit`() =
       runBlocking {
-        val algorithm = RedisSlidingWindowLog(ScriptLoader(connection))
+        val algorithm = RedisSlidingWindowLog(ScriptLoader(redisConnection))
         val key = "concurrent-key"
         val policy = defaultPolicy.copy(limit = 100u)
         withContext(Dispatchers.Default) {

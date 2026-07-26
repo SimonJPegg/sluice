@@ -33,7 +33,7 @@ class HealthStatusRouteTest : RedisTest() {
           StatusChecker(PolicyStatus(10, "2026-07-19T14:30:00.123456789Z")) {
             try {
               val start = TimeSource.Monotonic.markNow()
-              connection.async().ping().await()
+              redisConnection.async().ping().await()
               StoreStatus(
                   type = "redis",
                   status = "connected",
@@ -68,7 +68,7 @@ class HealthStatusRouteTest : RedisTest() {
           StatusChecker(PolicyStatus(10, "2026-07-19T14:30:00.123456789Z")) {
             try {
               val start = TimeSource.Monotonic.markNow()
-              connection.async().ping().await()
+              redisConnection.async().ping().await()
               StoreStatus(
                   type = "redis",
                   status = "connected",
@@ -84,7 +84,7 @@ class HealthStatusRouteTest : RedisTest() {
           }
       )
     }
-    connection.close()
+    redisConnection.close()
     val response =
         client.get("/health/status") {
           header(HttpHeaders.Accept, ContentType.Application.Json.toString())

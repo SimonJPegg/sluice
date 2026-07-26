@@ -35,6 +35,7 @@ dependencies {
   /* Test */
   testImplementation(kotlin("test"))
   testImplementation(libs.testcontainers.redis)
+  testImplementation(libs.testcontainers.toxiproxy)
   testImplementation(libs.mockk)
   testImplementation(libs.kotlinx.coroutines.test)
   testImplementation(libs.junit.jupiter)

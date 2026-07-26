@@ -32,11 +32,11 @@ class FailureModeCounterStoreTest : RedisTest() {
     val store =
         FailureModeCounterStore(
             RedisCounterStore(
-                mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection)))
+                mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(redisConnection)))
             )
         )
     val testKey = "test-key"
-    connection.close()
+    redisConnection.close()
     val result = assertInstanceOf(Allowed::class.java, store.evaluate(testKey, defaultPolicy))
 
     assertEquals(0u, result.remaining)
@@ -48,29 +48,31 @@ class FailureModeCounterStoreTest : RedisTest() {
     val store =
         FailureModeCounterStore(
             RedisCounterStore(
-                mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection)))
+                mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(redisConnection)))
             )
         )
     val testKey = "test-key"
     val policy = defaultPolicy.copy(failType = FailType.CLOSED)
-    connection.close()
+    redisConnection.close()
     val result = assertInstanceOf(Denied::class.java, store.evaluate(testKey, policy))
 
     assertEquals(defaultPolicy.window, result.retryAfter)
   }
 
   @Test
-  fun `store fails according to policy when redis connection times out`() = runBlocking {
+  fun `store fails according to policy when redis redisConnection times out`() = runBlocking {
     val store =
         FailureModeCounterStore(
             RedisCounterStore(
-                mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(connection))),
+                mapOf(
+                    AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(redisConnection))
+                ),
                 1.milliseconds,
             )
         )
     val testKey = "test-key"
     val policy = defaultPolicy.copy(failType = FailType.CLOSED)
-    connection.close()
+    redisConnection.close()
     val result = assertInstanceOf(Denied::class.java, store.evaluate(testKey, policy))
 
     assertEquals(defaultPolicy.window, result.retryAfter)

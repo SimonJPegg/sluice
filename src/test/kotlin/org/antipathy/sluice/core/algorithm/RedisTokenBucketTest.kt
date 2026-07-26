@@ -43,7 +43,7 @@ class RedisTokenBucketTest : RedisTest() {
 
   @Test
   fun `first request returns Allowed with remaining = limit - 1`() = runBlocking {
-    val algorithm = RedisTokenBucket(ScriptLoader(connection))
+    val algorithm = RedisTokenBucket(ScriptLoader(redisConnection))
     val key = "test-key"
 
     val result = assertInstanceOf(Allowed::class.java, algorithm.calculate(key, defaultPolicy))
@@ -53,7 +53,7 @@ class RedisTokenBucketTest : RedisTest() {
 
   @Test
   fun `burst capacity - exhaust full bucket, next request denied`() = runBlocking {
-    val algorithm = RedisTokenBucket(ScriptLoader(connection))
+    val algorithm = RedisTokenBucket(ScriptLoader(redisConnection))
     val key = "test-key"
 
     repeat(defaultPolicy.limit.toInt()) {
@@ -67,7 +67,7 @@ class RedisTokenBucketTest : RedisTest() {
   @Test
   fun `steady state refill - after waiting one token period, one more request allowed`() =
       runBlocking {
-        val algorithm = RedisTokenBucket(ScriptLoader(connection))
+        val algorithm = RedisTokenBucket(ScriptLoader(redisConnection))
         val key = "test-key"
 
         repeat(defaultPolicy.limit.toInt()) {
@@ -83,7 +83,7 @@ class RedisTokenBucketTest : RedisTest() {
 
   @Test
   fun `overflow cap - long idle does not exceed limit`() = runBlocking {
-    val algorithm = RedisTokenBucket(ScriptLoader(connection))
+    val algorithm = RedisTokenBucket(ScriptLoader(redisConnection))
     val key = "test-key"
 
     repeat(defaultPolicy.limit.toInt()) {
@@ -99,7 +99,7 @@ class RedisTokenBucketTest : RedisTest() {
 
   @Test
   fun `empty bucket - retryAfter is time until next token`() = runBlocking {
-    val algorithm = RedisTokenBucket(ScriptLoader(connection))
+    val algorithm = RedisTokenBucket(ScriptLoader(redisConnection))
     val key = "test-key"
 
     repeat(defaultPolicy.limit.toInt()) {
@@ -112,7 +112,7 @@ class RedisTokenBucketTest : RedisTest() {
 
   @Test
   fun `partial refill - half a token period gives no new requests`() = runBlocking {
-    val algorithm = RedisTokenBucket(ScriptLoader(connection))
+    val algorithm = RedisTokenBucket(ScriptLoader(redisConnection))
     val key = "test-key"
 
     repeat(defaultPolicy.limit.toInt()) {
@@ -128,7 +128,7 @@ class RedisTokenBucketTest : RedisTest() {
   @Test
   fun `concurrent access - coroutines hammering same key, total allowed equals limit`() =
       runBlocking {
-        val algorithm = RedisTokenBucket(ScriptLoader(connection))
+        val algorithm = RedisTokenBucket(ScriptLoader(redisConnection))
         val key = "test-key"
         val policy = defaultPolicy.copy(limit = 100u)
         withContext(Dispatchers.Default) {
