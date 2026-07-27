@@ -1,10 +1,9 @@
 package org.antipathy.sluice.core.store
 
+import io.lettuce.core.RedisCommandTimeoutException
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.antipathy.sluice.core.algorithm.RedisFixedWindow
@@ -56,18 +55,11 @@ class RedisCounterStoreTest : RedisTest() {
   fun `store returns failed when redis connection times out`() = runBlocking {
     val hangingAlgorithm =
         mockk<RedisFixedWindow> {
-          coEvery { calculate(any(), any()) } coAnswers
-              {
-                delay(10.minutes)
-                Allowed(0u, 1.milliseconds)
-              }
+          coEvery { calculate(any(), any()) } throws
+              RedisCommandTimeoutException("Well, this is unexpected")
         }
 
-    val store =
-        RedisCounterStore(
-            mapOf(AlgorithmType.FIXED_WINDOW to hangingAlgorithm),
-            1.milliseconds,
-        )
+    val store = RedisCounterStore(mapOf(AlgorithmType.FIXED_WINDOW to hangingAlgorithm))
     val testKey = "test-key"
     val policy = defaultPolicy.copy(failType = FailType.CLOSED)
     redisConnection.close()

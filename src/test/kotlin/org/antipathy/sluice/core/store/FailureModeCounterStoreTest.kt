@@ -1,6 +1,5 @@
 package org.antipathy.sluice.core.store
 
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -64,10 +63,7 @@ class FailureModeCounterStoreTest : RedisTest() {
     val store =
         FailureModeCounterStore(
             RedisCounterStore(
-                mapOf(
-                    AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(redisConnection))
-                ),
-                1.milliseconds,
+                mapOf(AlgorithmType.FIXED_WINDOW to RedisFixedWindow(ScriptLoader(redisConnection)))
             )
         )
     val testKey = "test-key"

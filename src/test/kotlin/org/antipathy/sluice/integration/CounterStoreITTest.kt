@@ -1,6 +1,7 @@
 package org.antipathy.sluice.integration
 
 import eu.rekawek.toxiproxy.model.ToxicDirection
+import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -18,7 +19,9 @@ import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.UserIdPrincipal
 import io.ktor.server.auth.bearer
 import io.ktor.server.config.ApplicationConfig
+import io.ktor.server.engine.embeddedServer
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
+import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.callid.CallId
 import io.ktor.server.plugins.callid.callIdMdc
 import io.ktor.server.plugins.calllogging.CallLogging
@@ -34,7 +37,12 @@ import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.antipathy.sluice.api.metrics.PrometheusMetrics
 import org.antipathy.sluice.api.routes.metrics
@@ -61,9 +69,12 @@ class CounterStoreITTest : RedisTest() {
   private val maxIdentifierLength = 256
 
   @Suppress("LongMethod") // wiring
-  private fun Application.testModule() {
+  private fun Application.testModule(policyPath: String?) {
+
     val policyRegistry =
-        YamlPolicyRegistry(environment.config.property("rate-limit.policies.location").getString())
+        YamlPolicyRegistry(
+            policyPath ?: environment.config.property("rate-limit.policies.location").getString()
+        )
     val requiredAlgorithms = policyRegistry.requiredAlgorithms()
 
     val scriptLoader = ScriptLoader(redisConnection)
@@ -132,7 +143,7 @@ class CounterStoreITTest : RedisTest() {
   fun `Redis failure triggers circuit breaker, which triggers fail-open or closed per policy`() =
       testApplication {
         environment { config = ApplicationConfig("src/test/resources/api/valid/simple.yaml") }
-        application { testModule() }
+        application { testModule(null) }
 
         val correlationID = UUID.randomUUID().toString()
         proxy.toxics().timeout("cut-downstream", ToxicDirection.DOWNSTREAM, 0)
@@ -167,18 +178,40 @@ class CounterStoreITTest : RedisTest() {
       }
 
   @Test
-  @Suppress("ForbiddenComment") // I'll be back!
-  fun `concurrent requests beyond threshold get shed by throttle layer`() = testApplication {
-    environment { config = ApplicationConfig("src/test/resources/api/valid/simple.yaml") }
-    application { testModule() }
-    // TODO: testApplication is single-threaded so can't prove real concurrency.
-    //  Needs embeddedServer with a real HTTP client
+  fun `concurrent requests beyond threshold get shed by throttle layer`() = runBlocking {
+    val policyPath =
+        requireNotNull(javaClass.classLoader.getResource("policy/valid")) {
+              "Test policy file not found on classpath"
+            }
+            .path
+    val server = embeddedServer(Netty, 8080) { testModule(policyPath) }.start(wait = false)
+    val client = HttpClient()
+    val responses =
+        withContext(Dispatchers.IO) {
+          (1..(maxConcurrent * 2))
+              .map {
+                async {
+                  client.post("http://localhost:8080/check") {
+                    header(HttpHeaders.Authorization, "Bearer $totallySecureAPIKey")
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"key":"open-key","policyId":"api-global"}""")
+                  }
+                }
+              }
+              .awaitAll()
+        }
+
+    // this is non-deterministic, so "some of you might not make it" is the best we can do
+    assertTrue { responses.count { it.status == HttpStatusCode.OK } > 0 }
+    assertTrue { responses.count { it.status == HttpStatusCode.ServiceUnavailable } > 0 }
+
+    server.stop(1000, 1000)
   }
 
   @Test
   fun `metrics are recorded at each layer`() = testApplication {
     environment { config = ApplicationConfig("src/test/resources/api/valid/simple.yaml") }
-    application { testModule() }
+    application { testModule(null) }
 
     client.post("/check") {
       header(HttpHeaders.Authorization, "Bearer $totallySecureAPIKey")
