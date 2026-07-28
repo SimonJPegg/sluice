@@ -7,6 +7,8 @@ import io.ktor.server.response.respond
 import org.antipathy.sluice.core.model.Allowed
 import org.antipathy.sluice.core.model.Denied
 import org.antipathy.sluice.core.model.Failed
+import org.antipathy.sluice.core.model.FailedClosed
+import org.antipathy.sluice.core.model.FailedOpen
 import org.antipathy.sluice.core.model.RateLimitResponse
 import org.antipathy.sluice.core.policy.Policy
 
@@ -16,6 +18,8 @@ fun RateLimitResponse.toProcessed(policy: Policy): ProcessedRequest =
       is Allowed -> AllowedRequest(remaining.toInt(), policy.limit.toInt(), resetIn)
       is Denied -> DeniedRequest(retryAfter)
       is Failed -> FailedRequest(reason, failureCategory, retryAfter)
+      is FailedOpen -> AllowedRequest(remaining.toInt(), policy.limit.toInt(), resetIn)
+      is FailedClosed -> DeniedRequest(retryAfter)
     }
 
 /** Maps validation errors to HTTP responses. Returns a curried function awaiting the call. */

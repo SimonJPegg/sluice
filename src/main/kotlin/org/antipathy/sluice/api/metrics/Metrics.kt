@@ -7,23 +7,25 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration
 import kotlin.time.Instant
 import kotlin.time.toJavaDuration
-import org.antipathy.sluice.api.model.AllowedRequest
-import org.antipathy.sluice.api.model.DeniedRequest
-import org.antipathy.sluice.api.model.FailedRequest
 import org.antipathy.sluice.api.model.InvalidKeyRequest
 import org.antipathy.sluice.api.model.InvalidPolicyRequest
 import org.antipathy.sluice.api.model.MissingKeyRequest
 import org.antipathy.sluice.api.model.MissingPolicyRequest
 import org.antipathy.sluice.api.model.PolicyNotFoundRequest
-import org.antipathy.sluice.api.model.ProcessedRequest
 import org.antipathy.sluice.api.model.RequestWithError
+import org.antipathy.sluice.core.model.Allowed
+import org.antipathy.sluice.core.model.Denied
+import org.antipathy.sluice.core.model.Failed
+import org.antipathy.sluice.core.model.FailedClosed
+import org.antipathy.sluice.core.model.FailedOpen
+import org.antipathy.sluice.core.model.RateLimitResponse
 import org.antipathy.sluice.core.policy.Policy
 
 /** Shim interface to avoid passing the MeterRegistry around (which is far too big for my liking) */
 interface Metrics {
 
   /** Tracks whether requests are being allowed, denied, or failing — and how long each takes. */
-  fun trackEvaluation(policy: Policy, result: ProcessedRequest, duration: Duration)
+  fun trackEvaluation(policy: Policy, result: RateLimitResponse, duration: Duration)
 
   /** Tracks client misuse: bad input that never reaches evaluation. */
   fun trackValidationError(error: RequestWithError)
@@ -49,13 +51,15 @@ internal class PrometheusMetrics(private val registry: PrometheusMeterRegistry) 
 
   private val policyTimestamps = ConcurrentHashMap<String, AtomicLong>()
 
-  override fun trackEvaluation(policy: Policy, result: ProcessedRequest, duration: Duration) {
+  override fun trackEvaluation(policy: Policy, result: RateLimitResponse, duration: Duration) {
 
     val resultTag =
         when (result) {
-          is AllowedRequest -> "allowed"
-          is FailedRequest -> "failed"
-          is DeniedRequest -> "denied"
+          is Allowed -> "allowed"
+          is Denied -> "denied"
+          is Failed -> "failed"
+          is FailedOpen -> "failed_open"
+          is FailedClosed -> "failed_closed"
         }
     registry
         .counter("sluice_request_outcomes", "policy", policy.id, "result", resultTag)

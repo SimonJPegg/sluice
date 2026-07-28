@@ -152,6 +152,11 @@
           "minimum": 1,
           "description": "Maximum concurrent requests before load shedding (omit to disable)"
         },
+        "commandTimeoutMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Redis command timeout in milliseconds. Controls how long Sluice waits for a Redis response before failing."
+        },
         "circuitBreaker": {
           "type": "object",
           "required": ["enabled"],

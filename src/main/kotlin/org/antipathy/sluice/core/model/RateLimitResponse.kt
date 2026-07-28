@@ -23,6 +23,17 @@ data class Failed(
     val failureCategory: FailureCategory = FailureCategory.SEE_REASON,
 ) : RateLimitResponse
 
+/** Policy said allow when Redis is dead. Looks like Allowed but isn't. */
+data class FailedOpen(
+    val remaining: UInt,
+    val resetIn: Duration,
+) : RateLimitResponse
+
+/** Policy said deny when Redis is dead. Looks like Denied but isn't. */
+data class FailedClosed(
+    val retryAfter: Duration,
+) : RateLimitResponse
+
 enum class FailureCategory {
   OVERLOADED, // we're load shedding
   CIRCUIT_OPEN, // circuit breaker has tripped

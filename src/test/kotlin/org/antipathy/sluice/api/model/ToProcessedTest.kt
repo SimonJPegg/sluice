@@ -5,6 +5,8 @@ import kotlin.time.Duration.Companion.seconds
 import org.antipathy.sluice.core.model.Allowed
 import org.antipathy.sluice.core.model.Denied
 import org.antipathy.sluice.core.model.Failed
+import org.antipathy.sluice.core.model.FailedClosed
+import org.antipathy.sluice.core.model.FailedOpen
 import org.antipathy.sluice.core.policy.AlgorithmType
 import org.antipathy.sluice.core.policy.FailType
 import org.antipathy.sluice.core.policy.Policy
@@ -37,5 +39,23 @@ class ToProcessedTest {
     val policy = Policy("1", 1u, FailType.OPEN, 1.seconds, AlgorithmType.TOKEN_BUCKET)
     val result = assertInstanceOf<FailedRequest>(failed.toProcessed(policy))
     assertEquals(failed.reason, result.reason)
+  }
+
+  @Test
+  fun `maps FailedOpen to AllowedRequest`() {
+    val failedOpen = FailedOpen(0u, 1.seconds)
+    val policy = Policy("1", 100u, FailType.OPEN, 1.seconds, AlgorithmType.TOKEN_BUCKET)
+    val result = assertInstanceOf<AllowedRequest>(failedOpen.toProcessed(policy))
+    assertEquals(0, result.remaining)
+    assertEquals(100, result.limit)
+    assertEquals(failedOpen.resetIn, result.resetIn)
+  }
+
+  @Test
+  fun `maps FailedClosed to DeniedRequest`() {
+    val failedClosed = FailedClosed(1.seconds)
+    val policy = Policy("1", 100u, FailType.CLOSED, 1.seconds, AlgorithmType.TOKEN_BUCKET)
+    val result = assertInstanceOf<DeniedRequest>(failedClosed.toProcessed(policy))
+    assertEquals(failedClosed.retryAfter, result.retryAfter)
   }
 }

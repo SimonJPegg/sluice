@@ -19,8 +19,27 @@ class SluiceConfigurationTest {
     val result = SluiceConfiguration.from(config)
 
     assertEquals("src/test/resources/policy/valid", result.policiesLocation)
-    assertEquals("redis://localhost:6379", result.redisUrl)
+    assertEquals("localhost", result.redisUri?.host)
+    assertEquals(6379, result.redisUri?.port)
     assertEquals(128, result.maxIdentifierLength)
+  }
+
+  @Test
+  fun `should use default command timeout when not specified`() {
+    val config = ApplicationConfig("src/test/resources/config/valid-no-redis.yaml")
+
+    val result = SluiceConfiguration.from(config)
+
+    assertNull(result.redisUri)
+  }
+
+  @Test
+  fun `should apply command timeout to redis uri`() {
+    val config = ApplicationConfig("src/test/resources/config/valid-all-fields.yaml")
+
+    val result = SluiceConfiguration.from(config)
+
+    assertEquals(java.time.Duration.ofMillis(200), result.redisUri?.timeout)
   }
 
   @Test
@@ -30,7 +49,7 @@ class SluiceConfigurationTest {
     val result = SluiceConfiguration.from(config)
 
     assertEquals("src/test/resources/policy/valid", result.policiesLocation)
-    assertNull(result.redisUrl)
+    assertNull(result.redisUri)
   }
 
   @Test

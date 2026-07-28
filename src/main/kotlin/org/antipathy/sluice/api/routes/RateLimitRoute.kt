@@ -51,7 +51,8 @@ fun Application.rateLimit(
           metrics.trackValidationError(result)
         }
         is ValidRequest -> {
-          val processed = store.evaluate(result.key, result.policy).toProcessed(result.policy)
+          val evaluation = store.evaluate(result.key, result.policy)
+          val processed = evaluation.toProcessed(result.policy)
           processed.toResponse()(call)
           logger.debug(
               "key={} policy={} result={} duration={}ms",
@@ -60,7 +61,7 @@ fun Application.rateLimit(
               processed.javaClass.simpleName,
               start.elapsedNow().inWholeMilliseconds,
           )
-          metrics.trackEvaluation(result.policy, processed, start.elapsedNow())
+          metrics.trackEvaluation(result.policy, evaluation, start.elapsedNow())
         }
       }
     }

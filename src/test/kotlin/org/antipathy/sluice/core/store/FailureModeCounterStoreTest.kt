@@ -5,8 +5,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.antipathy.sluice.core.algorithm.RedisFixedWindow
 import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
-import org.antipathy.sluice.core.model.Allowed
-import org.antipathy.sluice.core.model.Denied
+import org.antipathy.sluice.core.model.FailedClosed
+import org.antipathy.sluice.core.model.FailedOpen
 import org.antipathy.sluice.core.policy.AlgorithmType
 import org.antipathy.sluice.core.policy.FailType
 import org.antipathy.sluice.core.policy.Policy
@@ -36,7 +36,7 @@ class FailureModeCounterStoreTest : RedisTest() {
         )
     val testKey = "test-key"
     redisConnection.close()
-    val result = assertInstanceOf(Allowed::class.java, store.evaluate(testKey, defaultPolicy))
+    val result = assertInstanceOf(FailedOpen::class.java, store.evaluate(testKey, defaultPolicy))
 
     assertEquals(0u, result.remaining)
     assertEquals(defaultPolicy.window, result.resetIn)
@@ -53,7 +53,7 @@ class FailureModeCounterStoreTest : RedisTest() {
     val testKey = "test-key"
     val policy = defaultPolicy.copy(failType = FailType.CLOSED)
     redisConnection.close()
-    val result = assertInstanceOf(Denied::class.java, store.evaluate(testKey, policy))
+    val result = assertInstanceOf(FailedClosed::class.java, store.evaluate(testKey, policy))
 
     assertEquals(defaultPolicy.window, result.retryAfter)
   }
@@ -69,7 +69,7 @@ class FailureModeCounterStoreTest : RedisTest() {
     val testKey = "test-key"
     val policy = defaultPolicy.copy(failType = FailType.CLOSED)
     redisConnection.close()
-    val result = assertInstanceOf(Denied::class.java, store.evaluate(testKey, policy))
+    val result = assertInstanceOf(FailedClosed::class.java, store.evaluate(testKey, policy))
 
     assertEquals(defaultPolicy.window, result.retryAfter)
   }

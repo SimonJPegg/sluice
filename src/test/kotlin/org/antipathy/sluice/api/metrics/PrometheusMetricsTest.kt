@@ -6,14 +6,16 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
-import org.antipathy.sluice.api.model.AllowedRequest
-import org.antipathy.sluice.api.model.DeniedRequest
-import org.antipathy.sluice.api.model.FailedRequest
 import org.antipathy.sluice.api.model.InvalidKeyRequest
 import org.antipathy.sluice.api.model.InvalidPolicyRequest
 import org.antipathy.sluice.api.model.MissingKeyRequest
 import org.antipathy.sluice.api.model.MissingPolicyRequest
 import org.antipathy.sluice.api.model.PolicyNotFoundRequest
+import org.antipathy.sluice.core.model.Allowed
+import org.antipathy.sluice.core.model.Denied
+import org.antipathy.sluice.core.model.Failed
+import org.antipathy.sluice.core.model.FailedClosed
+import org.antipathy.sluice.core.model.FailedOpen
 import org.antipathy.sluice.core.model.FailureCategory
 import org.antipathy.sluice.core.policy.AlgorithmType
 import org.antipathy.sluice.core.policy.FailType
@@ -30,7 +32,7 @@ class PrometheusMetricsTest {
 
   @Test
   fun `should increment counter for allowed evaluation`() {
-    val allowed = AllowedRequest(1, 100, 1.seconds)
+    val allowed = Allowed(1u, 1.seconds)
     metrics.trackEvaluation(defaultPolicy, allowed, 1.seconds)
     val counter =
         registry.counter("sluice_request_outcomes", "policy", defaultPolicy.id, "result", "allowed")
@@ -39,7 +41,7 @@ class PrometheusMetricsTest {
 
   @Test
   fun `should increment counter for denied evaluation`() {
-    val denied = DeniedRequest(1.seconds)
+    val denied = Denied(1.seconds)
     metrics.trackEvaluation(defaultPolicy, denied, 1.seconds)
     val counter =
         registry.counter("sluice_request_outcomes", "policy", defaultPolicy.id, "result", "denied")
@@ -48,7 +50,7 @@ class PrometheusMetricsTest {
 
   @Test
   fun `should increment counter for failed evaluation`() {
-    val failed = FailedRequest("Gremlins", FailureCategory.SEE_REASON, null)
+    val failed = Failed("Gremlins", null, FailureCategory.SEE_REASON)
     metrics.trackEvaluation(defaultPolicy, failed, 1.seconds)
     val counter =
         registry.counter("sluice_request_outcomes", "policy", defaultPolicy.id, "result", "failed")
@@ -57,12 +59,42 @@ class PrometheusMetricsTest {
 
   @Test
   fun `should record duration for evaluation`() {
-    val allowed = AllowedRequest(1, 100, 1.seconds)
+    val allowed = Allowed(1u, 1.seconds)
     metrics.trackEvaluation(defaultPolicy, allowed, 1.seconds)
 
     val timer =
         registry.timer("sluice_request_duration", "policy", defaultPolicy.id, "result", "allowed")
     assertEquals(1, timer.count())
+  }
+
+  @Test
+  fun `should increment counter for failed_open evaluation`() {
+    val failedOpen = FailedOpen(0u, 1.seconds)
+    metrics.trackEvaluation(defaultPolicy, failedOpen, 1.seconds)
+    val counter =
+        registry.counter(
+            "sluice_request_outcomes",
+            "policy",
+            defaultPolicy.id,
+            "result",
+            "failed_open",
+        )
+    assertEquals(1.0, counter.count())
+  }
+
+  @Test
+  fun `should increment counter for failed_closed evaluation`() {
+    val failedClosed = FailedClosed(1.seconds)
+    metrics.trackEvaluation(defaultPolicy, failedClosed, 1.seconds)
+    val counter =
+        registry.counter(
+            "sluice_request_outcomes",
+            "policy",
+            defaultPolicy.id,
+            "result",
+            "failed_closed",
+        )
+    assertEquals(1.0, counter.count())
   }
 
   @Test

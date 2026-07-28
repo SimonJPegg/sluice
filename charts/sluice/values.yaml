@@ -87,6 +87,8 @@ rateLimiting:
   maxIdentifierLength: 256
   # -- Max concurrent requests before load shedding (omit to disable)
   # maxConcurrentRequests: 100
+  # -- Redis command timeout in milliseconds (default 200ms if omitted)
+  commandTimeoutMs: 200
   # -- Circuit breaker configuration
   circuitBreaker:
     # -- Enable circuit breaker on the counter store

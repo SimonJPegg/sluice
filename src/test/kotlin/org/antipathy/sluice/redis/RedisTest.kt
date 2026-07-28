@@ -27,6 +27,7 @@ abstract class RedisTest {
     redisClient.options =
         ClientOptions.builder()
             .timeoutOptions(TimeoutOptions.enabled(Duration.ofMillis(50)))
+            .autoReconnect(true)
             .build()
     redisConnection = redisClient.connect()
     redisConnection.sync().flushall()

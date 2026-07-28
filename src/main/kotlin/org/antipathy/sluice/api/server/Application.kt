@@ -19,6 +19,7 @@ import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisException
+import io.lettuce.core.RedisURI
 import io.lettuce.core.api.StatefulRedisConnection
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
@@ -88,7 +89,7 @@ internal fun createRedisCleanUpPlugin(
 
 /** Builds a Redis-backed store and status checker. Registers cleanup via the provided installer. */
 internal fun redisStore(
-    redisUri: String,
+    redisUri: RedisURI,
     policyContext: PolicyContext,
     metrics: Metrics,
     installPlugin: (ApplicationPlugin<Unit>) -> Unit,
@@ -196,8 +197,8 @@ fun Application.module() {
   )
 
   val (baseStore, statusChecker) =
-      if (config.redisUrl != null) {
-        redisStore(config.redisUrl, policyContext, metrics) { plugin -> install(plugin) }
+      if (config.redisUri != null) {
+        redisStore(config.redisUri, policyContext, metrics) { plugin -> install(plugin) }
       } else {
         inMemoryStore(policyContext)
       }

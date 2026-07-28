@@ -1,6 +1,7 @@
 package org.antipathy.sluice.core.algorithm
 
 import kotlin.test.Test
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -135,6 +136,6 @@ class RedisFixedWindowTest : RedisTest() {
     delay(900L) // almost expired but not quite
 
     val secondResult = algorithm.calculate(testKey, policy)
-    assertInstanceOf(Allowed::class.java, secondResult)
+    assertIs<Allowed>(secondResult)
   }
 }

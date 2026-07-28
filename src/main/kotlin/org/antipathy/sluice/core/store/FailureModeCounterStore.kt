@@ -1,8 +1,8 @@
 package org.antipathy.sluice.core.store
 
-import org.antipathy.sluice.core.model.Allowed
-import org.antipathy.sluice.core.model.Denied
 import org.antipathy.sluice.core.model.Failed
+import org.antipathy.sluice.core.model.FailedClosed
+import org.antipathy.sluice.core.model.FailedOpen
 import org.antipathy.sluice.core.model.FailureCategory
 import org.antipathy.sluice.core.model.RateLimitResponse
 import org.antipathy.sluice.core.policy.FailType
@@ -24,10 +24,10 @@ class FailureModeCounterStore(private val delegate: CounterStore) : CounterStore
     ) {
       if (policy.failType == FailType.OPEN) {
         logger.error("Redis error, failing open as per {}", policy.id)
-        Allowed(0u, policy.window)
+        FailedOpen(0u, policy.window)
       } else {
         logger.error("Redis error, failing closed as per {}", policy.id)
-        Denied(policy.window)
+        FailedClosed(policy.window)
       }
     } else {
       result

@@ -391,6 +391,54 @@
         }
       ],
       "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 30,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "normal" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "unit": "reqps"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 },
+      "id": 26,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "Degraded Traffic (Fail-Open / Fail-Closed)",
+      "targets": [
+        {
+          "datasource": { "uid": "prometheus" },
+          "expr": "sum(rate(sluice_request_outcomes_total{result=\"failed_open\"}[5m])) by (policy)",
+          "legendFormat": "{{policy}} — failed_open"
+        },
+        {
+          "datasource": { "uid": "prometheus" },
+          "expr": "sum(rate(sluice_request_outcomes_total{result=\"failed_closed\"}[5m])) by (policy)",
+          "legendFormat": "{{policy}} — failed_closed"
+        }
+      ],
+      "type": "timeseries"
     }
   ],
   "preload": false,

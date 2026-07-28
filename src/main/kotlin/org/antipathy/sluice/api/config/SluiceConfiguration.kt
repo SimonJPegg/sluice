@@ -17,7 +17,7 @@ data class CircuitBreaker(
 /** Minimal required config for sluice */
 data class SluiceConfiguration(
     val policiesLocation: String,
-    val redisUrl: String?,
+    val redisUri: RedisURI?,
     val maxIdentifierLength: Int = 256,
     val maxConcurrentRequests: Int?,
     val circuitBreaker: CircuitBreaker?,
@@ -27,12 +27,13 @@ data class SluiceConfiguration(
   companion object {
     private val logger = LoggerFactory.getLogger(SluiceConfiguration::class.java)
     private const val DEFAULT_MAX_IDENTIFIER_LENGTH = 256
+    private const val DEFAULT_COMMAND_TIMEOUT_MS = 200L
 
     /** build our internal config from ktor's */
     fun from(config: ApplicationConfig): SluiceConfiguration {
       val exceptions = mutableListOf<ConfigurationException>()
 
-      val redisUrl = parseRedisUrl(config, exceptions)
+      val redisUri = parseRedisUri(config, exceptions)
       val policiesLocation = parsePoliciesLocation(config, exceptions)
       val maxIdentifierLength = parseMaxIdentifierLength(config, exceptions)
       val maxConcurrentRequests = parseMaxConcurrentRequests(config)
@@ -51,7 +52,7 @@ data class SluiceConfiguration(
 
       return SluiceConfiguration(
           policiesLocation,
-          redisUrl,
+          redisUri,
           maxIdentifierLength,
           maxConcurrentRequests,
           circuitBreaker,
@@ -63,19 +64,48 @@ data class SluiceConfiguration(
       return config.propertyOrNull("rate-limit.auth.api-key")?.getString()
     }
 
-    private fun parseRedisUrl(
+    private fun parseRedisUri(
         config: ApplicationConfig,
         exceptions: MutableList<ConfigurationException>,
-    ): String? {
-      val redisUrl = config.propertyOrNull("rate-limit.backend.redis-uri")?.getString()
-      if (!redisUrl.isNullOrBlank()) {
-        try {
-          RedisURI.create(redisUrl)
-        } catch (e: IllegalArgumentException) {
-          exceptions.add(ConfigurationException("invalid Redis URI: ${e.message}"))
-        }
+    ): RedisURI? {
+      val raw = config.propertyOrNull("rate-limit.backend.redis-uri")?.getString()
+      if (raw.isNullOrBlank()) return null
+
+      val uri =
+          try {
+            RedisURI.create(raw)
+          } catch (e: IllegalArgumentException) {
+            exceptions.add(ConfigurationException("invalid Redis URI: ${e.message}"))
+            null
+          }
+
+      uri?.timeout = java.time.Duration.ofMillis(parseCommandTimeoutMs(config, exceptions))
+      return uri
+    }
+
+    private fun parseCommandTimeoutMs(
+        config: ApplicationConfig,
+        exceptions: MutableList<ConfigurationException>,
+    ): Long {
+      val raw =
+          config.propertyOrNull("rate-limit.backend.command-timeout-ms")?.getString()
+              ?: return DEFAULT_COMMAND_TIMEOUT_MS
+      val value = raw.toLongOrNull()
+      when {
+        value == null ->
+            exceptions.add(
+                ConfigurationException(
+                    "rate-limit.backend.command-timeout-ms must be a valid integer, got: '$raw'"
+                )
+            )
+        value < 1 ->
+            exceptions.add(
+                ConfigurationException(
+                    "rate-limit.backend.command-timeout-ms must be greater than 0, got: '$value'"
+                )
+            )
       }
-      return redisUrl
+      return value ?: DEFAULT_COMMAND_TIMEOUT_MS
     }
 
     private fun parsePoliciesLocation(
