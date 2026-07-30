@@ -62,4 +62,12 @@ tasks.withType<Detekt>().configureEach {
 
 kotlin { jvmToolchain(21) }
 
-tasks.test { useJUnitPlatform() }
+tasks.test { useJUnitPlatform { excludeTags("chaos") } }
+
+tasks.register<Test>("chaosTest") {
+  description = "Runs chaos tests (fault injection under sustained traffic)"
+  group = "verification"
+  useJUnitPlatform { includeTags("chaos") }
+  testClassesDirs = sourceSets["test"].output.classesDirs
+  classpath = sourceSets["test"].runtimeClasspath
+}

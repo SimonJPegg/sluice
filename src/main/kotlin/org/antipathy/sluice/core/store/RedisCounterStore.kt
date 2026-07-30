@@ -2,6 +2,7 @@ package org.antipathy.sluice.core.store
 
 import io.lettuce.core.RedisCommandTimeoutException
 import io.lettuce.core.RedisException
+import kotlinx.io.IOException
 import org.antipathy.sluice.core.algorithm.RedisAlgorithm
 import org.antipathy.sluice.core.model.Failed
 import org.antipathy.sluice.core.model.FailureCategory
@@ -28,6 +29,9 @@ class RedisCounterStore(
     } catch (_: NoSuchElementException) {
       Failed(reason = "Algorithm ${policy.algorithmType} has not been implemented yet", null)
     } catch (e: RedisException) {
+      logger.error("Redis error", e)
+      Failed("Redis failure ${e.message}", policy.window, FailureCategory.STORE_UNAVAILABLE)
+    } catch (e: IOException) {
       logger.error("Redis error", e)
       Failed("Redis failure ${e.message}", policy.window, FailureCategory.STORE_UNAVAILABLE)
     }

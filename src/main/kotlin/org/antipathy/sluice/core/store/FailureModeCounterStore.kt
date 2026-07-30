@@ -20,7 +20,8 @@ class FailureModeCounterStore(private val delegate: CounterStore) : CounterStore
   ): RateLimitResponse {
     return if (
         (result.failureCategory == FailureCategory.STORE_UNAVAILABLE) ||
-            (result.failureCategory == FailureCategory.STORE_TIMEOUT)
+            (result.failureCategory == FailureCategory.STORE_TIMEOUT) ||
+            (result.failureCategory == FailureCategory.CIRCUIT_OPEN)
     ) {
       if (policy.failType == FailType.OPEN) {
         logger.error("Redis error, failing open as per {}", policy.id)

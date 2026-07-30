@@ -155,7 +155,7 @@
         "commandTimeoutMs": {
           "type": "integer",
           "minimum": 1,
-          "description": "Redis command timeout in milliseconds. Controls how long Sluice waits for a Redis response before failing."
+          "description": "Redis command timeout in milliseconds"
         },
         "circuitBreaker": {
           "type": "object",
@@ -243,6 +243,21 @@
         "labels": {
           "type": "object",
           "description": "Additional labels for ServiceMonitor discovery"
+        }
+      }
+    },
+    "grafanaDashboard": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable Grafana dashboard auto-discovery via sidecar"
+        },
+        "namespace": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Namespace to deploy the dashboard ConfigMap (where Grafana lives)"
         }
       }
     }

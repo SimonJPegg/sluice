@@ -109,6 +109,23 @@ Policy: `fixed-window-example` (100 req/min). Majority denied after first window
 
 ---
 
+## Chaos testing
+
+run with 
+
+```bash
+gradle chaosTest
+```
+
+### Redis unreachable
+CircutBreaker is broken. A caller shouldn't see 503 then 429 then 503 again because the circuit breaker is cycling 
+through open/half-open internally. That's implementation detail leaking into the API. Redis is down, policy says 
+fail-closed, give them one answer until it comes back.
+
+### connection refused
+We didn't catch socket exceptions and were returning 500 errors to clients
+
+
 ## Gaps Identified
 - `sluice_request_outcomes_total` needs a `result="failed_open"` & a `result="failed_closed"` label
 - Lettuce client does not reconnect after Redis restart — requires Sluice pod restart to recover

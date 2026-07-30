@@ -1,0 +1,11 @@
+policies:
+  - id: api-open
+    limit: 100000
+    window: "PT1M"
+    algorithmType: fixed_window
+    failType: open
+  - id: api-closed
+    limit: 1000000
+    window: PT1M
+    algorithmType: "sliding_window_counter"
+    failType: closed

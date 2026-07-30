@@ -47,7 +47,7 @@ interface Metrics {
 }
 
 /** Prometheus implementation of the Metric interface */
-internal class PrometheusMetrics(private val registry: PrometheusMeterRegistry) : Metrics {
+class PrometheusMetrics(private val registry: PrometheusMeterRegistry) : Metrics {
 
   private val policyTimestamps = ConcurrentHashMap<String, AtomicLong>()
 
