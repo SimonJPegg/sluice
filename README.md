@@ -22,29 +22,9 @@ curl -X POST http://localhost:8080/check \
   -d '{"key": "user-123", "policyId": "fixed-window-example"}'
 ```
 
-That's it. Sluice + Redis, running locally, no cluster needed.
+That's it. Sluice + Redis, running locally.
 
-## API
-
-`POST /check` with `{"key": "...", "policyId": "..."}`.
-
-Returns:
-- `200` with `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` — allowed
-- `429` with `Retry-After` — denied
-- `404` — unknown policy
-- `400` — bad input
-
-Health: `/health/live`, `/health/ready`, `/health/status`
-
-## Deploy
-
-Helm chart in `charts/sluice/`. See the [chart README](charts/sluice/README.md) for values and configuration.
-
-For local development, `docker compose up` builds from source and wires everything together with example policies.
-
-## Tech
-
-Kotlin 2.x, Ktor, Lettuce, Micrometer. JVM 21. Gradle.
+For Kubernetes, there's a Helm chart in `charts/sluice/`. See the [chart README](charts/sluice/README.md) for values and configuration.
 
 ## Design
 
@@ -60,14 +40,36 @@ Kotlin 2.x, Ktor, Lettuce, Micrometer. JVM 21. Gradle.
 - Policies loaded from YAML at startup, validated, no runtime mutation
 - Structured JSON logging, correlation ID propagation, config validation at startup
 
-Architecture decisions documented in `docs/decisions/`.
+Sequence diagrams: [happy path](docs/sequence-happy-path.md) | [Redis failure](docs/sequence-redis-failure.md)
 
+[Code walkthrough](docs/code-walkthrough.md) — how the type system and composition drive the design.
+
+Architecture decisions documented in [`docs/decisions/`](docs/decisions/).
+
+## API
+
+`POST /check` with `{"key": "...", "policyId": "..."}`.
+
+Returns:
+- `200` with `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` — allowed
+- `429` with `Retry-After` — denied
+- `404` — unknown policy
+- `400` — bad input
+
+Health: `/health/live`, `/health/ready`, `/health/status`
 
 ## Metrics
 
 Prometheus metrics on `/metrics` — outcomes, latency, errors, store health
 
  <img src="docs/images/metrics.png" alt="Grafana Dashboard" width="80%">
+
+Request rate, denial %, Redis latency, per-policy breakdowns, and validation errors.
+[Performance baselines](docs/performance.md) — k6 load tests, chaos testing results, identified gaps.
+
+## Tech
+
+Kotlin 2.x, Ktor, Lettuce, Micrometer. JVM 21. Gradle.
 
 ## Roadmap
 

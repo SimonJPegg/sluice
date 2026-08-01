@@ -9,6 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read
+      checks: write
     steps:
       - uses: actions/checkout@v7
       - name: Set up JDK 21
@@ -22,5 +24,12 @@ jobs:
         run: ./gradlew detekt
       - name: Test
         run: ./gradlew test
+      - name: Test Report
+        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
+        if: ${{ !cancelled() }}
+        with:
+          name: Tests
+          path: build/test-results/test/*.xml
+          reporter: java-junit
       - name: Docker build
         run: docker build . --tag sluice:$(date +%s)
