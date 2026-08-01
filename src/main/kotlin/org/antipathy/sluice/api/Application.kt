@@ -17,10 +17,14 @@ import io.ktor.server.plugins.callid.CallId
 import io.ktor.server.plugins.callid.callIdMdc
 import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.defaultheaders.DefaultHeaders
+import io.lettuce.core.ClientOptions
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisException
 import io.lettuce.core.RedisURI
 import io.lettuce.core.api.StatefulRedisConnection
+import io.lettuce.core.resource.ClientResources
+import io.lettuce.core.resource.Delay
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
@@ -100,7 +104,15 @@ internal fun redisStore(
     installPlugin: (ApplicationPlugin<Unit>) -> Unit,
 ): Pair<CounterStore, StatusChecker> {
 
-  val client = RedisClient.create(redisUri)
+  val clientResources = ClientResources.builder()
+    .reconnectDelay(Delay.exponential())
+    .build()
+  val client = RedisClient.create(clientResources,redisUri)
+  client.options = ClientOptions.builder()
+    .autoReconnect(true)
+    .build()
+
+
   val connection = client.connect()
   installPlugin(createRedisCleanUpPlugin(client, connection, policyWatcher))
 
@@ -193,6 +205,11 @@ private fun Application.installPlugins(): Pair<PrometheusMeterRegistry, Metrics>
         }
     )
   }
+
+    install(DefaultHeaders) {
+      val appVersion = object {}.javaClass.`package`.implementationVersion ?: "dev"
+      header("X-Sluice-Version", appVersion)
+    }
   install(CallId) {
     header(HttpHeaders.XRequestId)
     generate { UUID.randomUUID().toString() }

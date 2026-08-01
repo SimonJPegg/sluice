@@ -12,7 +12,7 @@ application { mainClass.set("org.antipathy.sluice.api.ApplicationKt") }
 
 group = "org.antipathy"
 
-version = "1.0-SNAPSHOT"
+version = "0.2.0"
 
 repositories { mavenCentral() }
 
@@ -31,6 +31,7 @@ dependencies {
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.micrometer.registry.prometheus)
   implementation(libs.logback.classic)
+  implementation("io.ktor:ktor-server-default-headers:3.5.1")
 
   /* Test */
   testImplementation(kotlin("test"))
@@ -61,6 +62,18 @@ tasks.withType<Detekt>().configureEach {
 }
 
 kotlin { jvmToolchain(21) }
+
+ktor {
+  fatJar {
+    archiveFileName.set("sluice-all.jar")
+  }
+}
+
+tasks.withType<Jar> {
+  manifest {
+    attributes("Implementation-Version" to project.version)
+  }
+}
 
 tasks.test {
   useJUnitPlatform { excludeTags("chaos") }
