@@ -44,6 +44,9 @@ interface Metrics {
 
   /** Records when each policy was loaded so stale config is detectable from a dashboard. */
   fun trackPolicyLoaded(policy: Policy, instant: Instant)
+
+  /** Records that a change to the policies occured, but they were not loaded */
+  fun trackPolicyReloadFailure()
 }
 
 /** Prometheus implementation of the Metric interface */
@@ -105,5 +108,9 @@ class PrometheusMetrics(private val registry: PrometheusMeterRegistry) : Metrics
           ref
         }
     holder.set(instant.epochSeconds)
+  }
+
+  override fun trackPolicyReloadFailure() {
+    registry.counter("sluice_policy_reload_error").increment()
   }
 }

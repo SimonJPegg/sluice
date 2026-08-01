@@ -33,6 +33,7 @@ import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import java.nio.file.Paths
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -50,6 +51,7 @@ import org.antipathy.sluice.api.routes.rateLimit
 import org.antipathy.sluice.api.store.InstrumentedCounterStore
 import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
 import org.antipathy.sluice.core.algorithm.redisAlgorithm
+import org.antipathy.sluice.core.policy.PolicyWatcher
 import org.antipathy.sluice.core.policy.YamlPolicyRegistry
 import org.antipathy.sluice.core.store.CircuitBreakerCounterStore
 import org.antipathy.sluice.core.store.FailureModeCounterStore
@@ -70,11 +72,15 @@ class CounterStoreITTest : RedisTest() {
 
   @Suppress("LongMethod") // wiring
   private fun Application.testModule(policyPath: String?) {
-
-    val policyRegistry =
-        YamlPolicyRegistry(
-            policyPath ?: environment.config.property("rate-limit.policies.location").getString()
+    val policyWatcher =
+        PolicyWatcher(
+            Paths.get(
+                policyPath
+                    ?: environment.config.property("rate-limit.policies.location").getString()
+            )
         )
+    policyWatcher.load()
+    val policyRegistry = YamlPolicyRegistry(policyWatcher)
     val requiredAlgorithms = policyRegistry.requiredAlgorithms()
 
     val scriptLoader = ScriptLoader(redisConnection)

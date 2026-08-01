@@ -27,10 +27,12 @@ import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import java.nio.file.Paths
 import java.util.UUID
 import kotlin.time.Clock
 import kotlin.time.TimeSource
 import kotlinx.coroutines.future.await
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.antipathy.sluice.api.config.SluiceConfiguration
 import org.antipathy.sluice.api.health.PolicyStatus
@@ -47,6 +49,7 @@ import org.antipathy.sluice.core.algorithm.inMemoryAlgorithm
 import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
 import org.antipathy.sluice.core.algorithm.redisAlgorithm
 import org.antipathy.sluice.core.exceptions.RedisScriptMissingException
+import org.antipathy.sluice.core.policy.PolicyWatcher
 import org.antipathy.sluice.core.policy.YamlPolicyRegistry
 import org.antipathy.sluice.core.store.CircuitBreakerCounterStore
 import org.antipathy.sluice.core.store.CounterStore
@@ -69,8 +72,10 @@ fun main(
 internal fun createRedisCleanUpPlugin(
     client: RedisClient,
     connection: StatefulRedisConnection<String, String>,
+    policyWatcher: PolicyWatcher,
 ): ApplicationPlugin<Unit> {
   return createApplicationPlugin("RedisCleanupPlugin") {
+    policyWatcher.stop()
     on(MonitoringEvent(ApplicationStopping)) {
       // We're shutting down here, the connection is going either way.
       try {
@@ -92,12 +97,13 @@ internal fun redisStore(
     redisUri: RedisURI,
     policyContext: PolicyContext,
     metrics: Metrics,
+    policyWatcher: PolicyWatcher,
     installPlugin: (ApplicationPlugin<Unit>) -> Unit,
 ): Pair<CounterStore, StatusChecker> {
 
   val client = RedisClient.create(redisUri)
   val connection = client.connect()
-  installPlugin(createRedisCleanUpPlugin(client, connection))
+  installPlugin(createRedisCleanUpPlugin(client, connection, policyWatcher))
 
   val scriptLoader = ScriptLoader(connection)
   val algorithms =
@@ -155,6 +161,7 @@ internal fun inMemoryStore(policyContext: PolicyContext): Pair<CounterStore, Sta
 }
 
 /** Composition root. Reads config, builds dependencies, installs plugins, mounts routes. */
+@Suppress("LongMethod") // DI is overkill here
 fun Application.module() {
 
   val config = SluiceConfiguration.from(environment.config)
@@ -182,7 +189,14 @@ fun Application.module() {
         listOf(JvmMemoryMetrics(), JvmGcMetrics(), JvmThreadMetrics(), ProcessorMetrics())
   }
 
-  val policyRegistry = YamlPolicyRegistry(config.policiesLocation)
+  val policyWatcher =
+      PolicyWatcher(
+          Paths.get(config.policiesLocation),
+          onReloadFailure = { metrics.trackPolicyReloadFailure() },
+      )
+  policyWatcher.load()
+  launch { policyWatcher.start() }
+  val policyRegistry = YamlPolicyRegistry(policyWatcher)
 
   val policyContext =
       PolicyContext(policyRegistry.requiredAlgorithms(), Clock.System.now(), policyRegistry.all())
@@ -198,7 +212,9 @@ fun Application.module() {
 
   val (baseStore, statusChecker) =
       if (config.redisUri != null) {
-        redisStore(config.redisUri, policyContext, metrics) { plugin -> install(plugin) }
+        redisStore(config.redisUri, policyContext, metrics, policyWatcher) { plugin ->
+          install(plugin)
+        }
       } else {
         inMemoryStore(policyContext)
       }

@@ -80,7 +80,7 @@ Prometheus metrics on `/metrics` — outcomes, latency, errors, store health
 ### v1.0.0 — Confidence
 - ~~Load testing with k6 (published baselines)~~
 - ~~Chaos testing (Redis failure, network partitions, latency injection)~~
-- Policy reload without pod restart
+- ~~Policy reload without pod restart~~
 - Resolve gaps from performance tests
 
 ## Why

@@ -28,10 +28,12 @@ import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import java.nio.file.Paths
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.antipathy.sluice.api.metrics.PrometheusMetrics
 import org.antipathy.sluice.api.routes.metrics
@@ -39,6 +41,7 @@ import org.antipathy.sluice.api.routes.rateLimit
 import org.antipathy.sluice.api.store.InstrumentedCounterStore
 import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
 import org.antipathy.sluice.core.algorithm.redisAlgorithm
+import org.antipathy.sluice.core.policy.PolicyWatcher
 import org.antipathy.sluice.core.policy.YamlPolicyRegistry
 import org.antipathy.sluice.core.store.CircuitBreakerCounterStore
 import org.antipathy.sluice.core.store.FailureModeCounterStore
@@ -59,9 +62,13 @@ class ChaosTest : RedisTest() {
 
   @Suppress("LongMethod") // wiring
   private fun Application.tzeentchModule(concurrency: Int = maxConcurrent) {
-
-    val policyRegistry =
-        YamlPolicyRegistry(environment.config.property("rate-limit.policies.location").getString())
+    val policyWatcher =
+        PolicyWatcher(
+            Paths.get(environment.config.property("rate-limit.policies.location").getString())
+        )
+    policyWatcher.load()
+    launch { policyWatcher.start() }
+    val policyRegistry = YamlPolicyRegistry(policyWatcher)
     val requiredAlgorithms = policyRegistry.requiredAlgorithms()
 
     val scriptLoader = ScriptLoader(redisConnection)

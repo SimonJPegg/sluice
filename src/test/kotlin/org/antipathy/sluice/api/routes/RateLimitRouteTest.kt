@@ -22,10 +22,13 @@ import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import java.nio.file.Paths
 import java.util.UUID
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.antipathy.sluice.api.metrics.PrometheusMetrics
 import org.antipathy.sluice.core.algorithm.inMemoryAlgorithm
+import org.antipathy.sluice.core.policy.PolicyWatcher
 import org.antipathy.sluice.core.policy.YamlPolicyRegistry
 import org.antipathy.sluice.core.store.InMemoryCounterStore
 import org.junit.jupiter.api.Assertions
@@ -34,8 +37,13 @@ import org.junit.jupiter.api.Test
 class RateLimitRouteTest {
 
   private fun Application.testModule() {
-    val policyRegistry =
-        YamlPolicyRegistry(environment.config.property("rate-limit.policies.location").getString())
+    val policyWatcher =
+        PolicyWatcher(
+            Paths.get(environment.config.property("rate-limit.policies.location").getString())
+        )
+    policyWatcher.load()
+    launch { policyWatcher.start() }
+    val policyRegistry = YamlPolicyRegistry(policyWatcher)
     val requiredAlgorithms = policyRegistry.requiredAlgorithms()
 
     val maxIdentifierLength = 256
