@@ -3,7 +3,7 @@ COPY . /build/
 WORKDIR /build
 RUN ./gradlew buildFatJar
 
-FROM docker.cloudsmith.io/antipathy-org/sluice/eclipse-temurin:21.0.7_6-jre-alpine
+FROM docker.cloudsmith.io/antipathy-org/sluice/eclipse-temurin:24.0.2_12-jre-alpine
 RUN addgroup -S sluice && adduser -S sluice -G sluice
 WORKDIR /app
 COPY --from=build /build/build/libs/sluice-all.jar /app/sluice.jar
