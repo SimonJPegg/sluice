@@ -3,6 +3,7 @@
 ![License](https://img.shields.io/github/license/simonJPegg/sluice)
 ![Version](https://img.shields.io/github/v/tag/simonJPegg/sluice)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/6d3fb07246554e6e9858a25fc906bbfb)](https://app.codacy.com/gh/SimonJPegg/sluice/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+
 # Sluice
 
 A standalone rate limiting service. You ask "can I do this?" over HTTP, it tells you yes or no with enough context to act on.
@@ -51,6 +52,7 @@ Architecture decisions documented in [`docs/decisions/`](docs/decisions/).
 `POST /check` with `{"key": "...", "policyId": "..."}`.
 
 Returns:
+
 - `200` with `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` — allowed
 - `429` with `Retry-After` — denied
 - `404` — unknown policy
@@ -75,13 +77,16 @@ Kotlin 2.x, Ktor, Lettuce, Micrometer. JVM 21. Gradle.
 
 ## Roadmap
 
-### v0.1.0 
+### v0.1.0
+
 -~~Backpressure / load shedding under degraded Redis~~
 
 ### v0.2.0 — (current)
+
 - ~~Authentication on `/check`~~
 
 ### v1.0.0 — Confidence
+
 - ~~Load testing with k6 (published baselines)~~
 - ~~Chaos testing (Redis failure, network partitions, latency injection)~~
 - ~~Policy reload without pod restart~~

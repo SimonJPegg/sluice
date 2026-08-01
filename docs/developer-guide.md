@@ -91,7 +91,7 @@ Both run in CI before tests. Failures block the build.
 
 ## Project structure
 
-```
+```text
 src/main/kotlin/org/antipathy/sluice/
 ├── api/                    # HTTP layer (Ktor, routes, config, metrics)
 │   ├── Application.kt      # Composition root

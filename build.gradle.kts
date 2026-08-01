@@ -63,17 +63,9 @@ tasks.withType<Detekt>().configureEach {
 
 kotlin { jvmToolchain(21) }
 
-ktor {
-  fatJar {
-    archiveFileName.set("sluice-all.jar")
-  }
-}
+ktor { fatJar { archiveFileName.set("sluice-all.jar") } }
 
-tasks.withType<Jar> {
-  manifest {
-    attributes("Implementation-Version" to project.version)
-  }
-}
+tasks.withType<Jar> { manifest { attributes("Implementation-Version" to project.version) } }
 
 tasks.test {
   useJUnitPlatform { excludeTags("chaos") }

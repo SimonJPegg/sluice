@@ -25,12 +25,14 @@ is measured against this. If something contradicts this doc, this doc wins.
 ## Coding Style
 
 ### Naming
+
 - `camelCase` for functions, properties, variables
 - `PascalCase` for classes, interfaces, objects, sealed types
 - `SCREAMING_SNAKE_CASE` for compile-time constants only
 - Package names: lowercase, no underscores
 
 ### Functions
+
 - Prefer pure functions. Side effects at the edges.
 - If a function exceeds ~10 lines, it's doing more than one thing. Decompose.
 - Exception: orchestration functions that sequence steps — but each step should be extracted.
@@ -39,6 +41,7 @@ is measured against this. If something contradicts this doc, this doc wins.
 - Suspend functions for anything involving I/O. Don't block threads.
 
 ### Types
+
 - Sealed interfaces for decision types and error hierarchies. Exhaust the `when`.
 - Data classes for value objects. Immutable by default (val, not var).
 - No `var` unless there's a documented reason (concurrency primitive, builder pattern).
@@ -46,6 +49,7 @@ is measured against this. If something contradicts this doc, this doc wins.
 - Null safety: don't use `!!`. If you can't avoid null, use `?.let {}` or `requireNotNull()` with a message.
 
 ### Error Handling
+
 - Explicit exception classes per failure mode. Each with a docstring explaining when it fires.
 - `Result<T>` or sealed return types over thrown exceptions for expected failures.
 - Thrown exceptions for programmer errors (illegal state, missing config at startup).
@@ -53,12 +57,14 @@ is measured against this. If something contradicts this doc, this doc wins.
 - `runCatching {}` only at boundaries (HTTP handler, entry points). Not in domain logic.
 
 ### Coroutines
+
 - Structured concurrency always. No `GlobalScope`.
 - Use `supervisorScope` when child failures shouldn't cancel siblings.
 - Timeouts via `withTimeout` / `withTimeoutOrNull` — don't let Redis calls hang.
 - `Dispatchers.IO` for blocking calls (if any). Ktor's default dispatcher for everything else.
 
 ### Dependencies
+
 - Pin exact versions in `gradle/libs.versions.toml` (version catalog).
 - No floating versions, no `+` ranges.
 - Prefer well-known, actively maintained libraries. If something looks niche, justify it.

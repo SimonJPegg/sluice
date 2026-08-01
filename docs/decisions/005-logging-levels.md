@@ -7,7 +7,7 @@ yes/no decision. Logging every request at INFO would generate too much noise and
 
 Metrics already cover "is it working?", Logs cover "what went wrong?" and "what's happening during development?"
 
-Logback as the implementation — it's Ktor's default and documented choice. 
+Logback as the implementation — it's Ktor's default and documented choice.
 
 ## Decision
 
@@ -29,5 +29,5 @@ Production default log level: **error**.
   or relying on metrics and response headers. Acceptable — metrics tell you something's
   wrong, a brief level bump tells you why.
 - No warn level in use. If we find a legitimate middle ground later (e.g. fail-open triggered
-  but service still functioning), we can introduce it then. 
+  but service still functioning), we can introduce it then.
 - Per-request debug logging means local development gives full visibility.

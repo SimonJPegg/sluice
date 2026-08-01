@@ -10,4 +10,3 @@ complexity:
   CyclomaticComplexMethod:
     active: true
     threshold: 10
-

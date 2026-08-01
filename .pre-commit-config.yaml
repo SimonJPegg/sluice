@@ -1,0 +1,32 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.svg$'
+      - id: end-of-file-fixer
+        exclude: '\.svg$'
+      - id: check-yaml
+        args: ['--allow-multiple-documents']
+        exclude: 'charts/.*/templates/'
+      - id: check-added-large-files
+      - id: check-merge-conflict
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.44.0
+    hooks:
+      - id: markdownlint
+        args: ['--fix', '--disable', 'MD013', 'MD024', 'MD033', 'MD040', 'MD041', '--']
+  - repo: local
+    hooks:
+      - id: detekt
+        name: detekt
+        entry: ./gradlew detekt --quiet
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: ktfmt-check
+        name: ktfmt
+        entry: ./gradlew ktfmtCheck --quiet
+        language: system
+        pass_filenames: false
+        always_run: true

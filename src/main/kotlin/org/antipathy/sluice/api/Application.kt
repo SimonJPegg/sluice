@@ -104,14 +104,9 @@ internal fun redisStore(
     installPlugin: (ApplicationPlugin<Unit>) -> Unit,
 ): Pair<CounterStore, StatusChecker> {
 
-  val clientResources = ClientResources.builder()
-    .reconnectDelay(Delay.exponential())
-    .build()
-  val client = RedisClient.create(clientResources,redisUri)
-  client.options = ClientOptions.builder()
-    .autoReconnect(true)
-    .build()
-
+  val clientResources = ClientResources.builder().reconnectDelay(Delay.exponential()).build()
+  val client = RedisClient.create(clientResources, redisUri)
+  client.options = ClientOptions.builder().autoReconnect(true).build()
 
   val connection = client.connect()
   installPlugin(createRedisCleanUpPlugin(client, connection, policyWatcher))
@@ -206,10 +201,10 @@ private fun Application.installPlugins(): Pair<PrometheusMeterRegistry, Metrics>
     )
   }
 
-    install(DefaultHeaders) {
-      val appVersion = object {}.javaClass.`package`.implementationVersion ?: "dev"
-      header("X-Sluice-Version", appVersion)
-    }
+  install(DefaultHeaders) {
+    val appVersion = object {}.javaClass.`package`.implementationVersion ?: "dev"
+    header("X-Sluice-Version", appVersion)
+  }
   install(CallId) {
     header(HttpHeaders.XRequestId)
     generate { UUID.randomUUID().toString() }
@@ -255,7 +250,10 @@ private fun Application.loadPolicies(
   return Triple(policyRegistry, policyContext, policyWatcher)
 }
 
-/** Wraps the base store in the decorator chain: instrumentation, circuit breaker, failure mode, throttle. */
+/**
+ * Wraps the base store in the decorator chain: instrumentation, circuit breaker, failure mode,
+ * throttle.
+ */
 internal fun buildStoreChain(
     baseStore: CounterStore,
     config: SluiceConfiguration,
