@@ -23,7 +23,7 @@ data:
         port: 8080
       application:
         modules:
-          - org.antipathy.sluice.api.server.ApplicationKt.module
+          - org.antipathy.sluice.api.ApplicationKt.module
     rate-limit:
       policies:
         location: /app/policies

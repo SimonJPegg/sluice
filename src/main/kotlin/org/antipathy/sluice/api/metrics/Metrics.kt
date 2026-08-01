@@ -42,6 +42,8 @@ interface Metrics {
    */
   fun trackLuaScriptLoadFailure(script: String)
 
+  fun trackRedisScriptLoaded(name: String)
+
   /** Records when each policy was loaded so stale config is detectable from a dashboard. */
   fun trackPolicyLoaded(policy: Policy, instant: Instant)
 
@@ -112,5 +114,9 @@ class PrometheusMetrics(private val registry: PrometheusMeterRegistry) : Metrics
 
   override fun trackPolicyReloadFailure() {
     registry.counter("sluice_policy_reload_error").increment()
+  }
+
+  override fun trackRedisScriptLoaded(name: String) {
+    registry.counter("sluice_script_load_total", "script", name).increment()
   }
 }

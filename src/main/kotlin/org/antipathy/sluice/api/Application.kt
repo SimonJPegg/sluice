@@ -1,4 +1,4 @@
-package org.antipathy.sluice.api.server
+package org.antipathy.sluice.api
 
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
@@ -59,7 +59,7 @@ import org.antipathy.sluice.core.store.RedisCounterStore
 import org.antipathy.sluice.core.store.ThrottledCounterStore
 import org.slf4j.LoggerFactory
 
-private val logger = LoggerFactory.getLogger("org.antipathy.sluice.api.server.Application")
+private val logger = LoggerFactory.getLogger("org.antipathy.sluice.api.Application")
 
 /** Ktor EngineMain entry point. Config-driven module loading via application.yaml. */
 fun main(
@@ -77,7 +77,6 @@ internal fun createRedisCleanUpPlugin(
   return createApplicationPlugin("RedisCleanupPlugin") {
     policyWatcher.stop()
     on(MonitoringEvent(ApplicationStopping)) {
-      // We're shutting down here, the connection is going either way.
       try {
         connection.close()
       } catch (e: RedisException) {
@@ -105,7 +104,7 @@ internal fun redisStore(
   val connection = client.connect()
   installPlugin(createRedisCleanUpPlugin(client, connection, policyWatcher))
 
-  val scriptLoader = ScriptLoader(connection)
+  val scriptLoader = ScriptLoader(connection) { name -> metrics.trackRedisScriptLoaded(name) }
   val algorithms =
       policyContext.requiredAlgorithms.associate { algorithmType ->
         try {
@@ -161,11 +160,31 @@ internal fun inMemoryStore(policyContext: PolicyContext): Pair<CounterStore, Sta
 }
 
 /** Composition root. Reads config, builds dependencies, installs plugins, mounts routes. */
-@Suppress("LongMethod") // DI is overkill here
 fun Application.module() {
 
   val config = SluiceConfiguration.from(environment.config)
+  val (appMicrometerRegistry, metrics) = installPlugins()
+  val (policyRegistry, policyContext, policyWatcher) = loadPolicies(config, metrics)
 
+  val (baseStore, statusChecker) =
+      if (config.redisUri != null) {
+        redisStore(config.redisUri, policyContext, metrics, policyWatcher) { plugin ->
+          install(plugin)
+        }
+      } else {
+        inMemoryStore(policyContext)
+      }
+
+  val finalStore = buildStoreChain(baseStore, config, metrics)
+
+  auth(config.apiKey)
+  healthCheck(statusChecker)
+  rateLimit(finalStore, policyRegistry, config.maxIdentifierLength, config.apiKey != null, metrics)
+  metrics { appMicrometerRegistry.scrape() }
+}
+
+/** Installs Ktor plugins for serialisation, correlation IDs, logging, and metrics. */
+private fun Application.installPlugins(): Pair<PrometheusMeterRegistry, Metrics> {
   install(ContentNegotiation) {
     json(
         Json {
@@ -188,7 +207,14 @@ fun Application.module() {
     meterBinders =
         listOf(JvmMemoryMetrics(), JvmGcMetrics(), JvmThreadMetrics(), ProcessorMetrics())
   }
+  return Pair(appMicrometerRegistry, metrics)
+}
 
+/** Loads policy files, starts the file watcher, and builds the registry. */
+private fun Application.loadPolicies(
+    config: SluiceConfiguration,
+    metrics: Metrics,
+): Triple<YamlPolicyRegistry, PolicyContext, PolicyWatcher> {
   val policyWatcher =
       PolicyWatcher(
           Paths.get(config.policiesLocation),
@@ -209,19 +235,17 @@ fun Application.module() {
       policyContext.allPolicies.size,
       policyContext.requiredAlgorithms.size,
   )
+  return Triple(policyRegistry, policyContext, policyWatcher)
+}
 
-  val (baseStore, statusChecker) =
-      if (config.redisUri != null) {
-        redisStore(config.redisUri, policyContext, metrics, policyWatcher) { plugin ->
-          install(plugin)
-        }
-      } else {
-        inMemoryStore(policyContext)
-      }
-
-  // Why take 1 InstrumentedCounterStore when you can have 2!
-  // inner tracks raw store health
-  // outer tracks what the user actually got.
+/** Wraps the base store in the decorator chain: instrumentation, circuit breaker, failure mode, throttle. */
+internal fun buildStoreChain(
+    baseStore: CounterStore,
+    config: SluiceConfiguration,
+    metrics: Metrics,
+): CounterStore {
+  // inner InstrumentedCounterStore tracks raw store health
+  // outer tracks what the caller actually got
   val withCircuitBreaker =
       config.circuitBreaker?.let {
         CircuitBreakerCounterStore(
@@ -237,12 +261,7 @@ fun Application.module() {
       config.maxConcurrentRequests?.let { ThrottledCounterStore(it, withFailureMode) }
           ?: withFailureMode
 
-  val finalStore = InstrumentedCounterStore(withThrottle, metrics, "chain")
-
-  auth(config.apiKey)
-  healthCheck(statusChecker)
-  rateLimit(finalStore, policyRegistry, config.maxIdentifierLength, config.apiKey != null, metrics)
-  metrics { appMicrometerRegistry.scrape() }
+  return InstrumentedCounterStore(withThrottle, metrics, "chain")
 }
 
 private fun Application.auth(apiKey: String?) {

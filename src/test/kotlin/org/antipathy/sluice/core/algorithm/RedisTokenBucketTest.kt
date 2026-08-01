@@ -136,13 +136,27 @@ class RedisTokenBucketTest : RedisTest() {
           val result = threads.awaitAll()
           val (allowed, denied) = result.partition { it is Allowed }
           assertEquals(
-                        25,
-                        allowed.size,
-                    )
+              25,
+              allowed.size,
+          )
           assertEquals(
-                        25,
-                        denied.size,
-                    )
+              25,
+              denied.size,
+          )
         }
       }
+
+  @Test
+  fun `redis NOSCRIPT errors are handled gracefully`() = runBlocking {
+    val algorithm = RedisTokenBucket(ScriptLoader(redisConnection))
+    val key = "test-key"
+
+    val pre = assertInstanceOf(Allowed::class.java, algorithm.calculate(key, defaultPolicy))
+    assertEquals(2u, pre.remaining)
+    assertDurationApprox(1.seconds, pre.resetIn)
+    redisConnection.sync().scriptFlush()
+    val post = assertInstanceOf(Allowed::class.java, algorithm.calculate(key, defaultPolicy))
+    assertEquals(1u, post.remaining)
+    assertDurationApprox(2.seconds, post.resetIn)
+  }
 }

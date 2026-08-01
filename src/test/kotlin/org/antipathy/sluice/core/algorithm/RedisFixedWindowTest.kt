@@ -111,31 +111,45 @@ class RedisFixedWindowTest : RedisTest() {
       val result = threads.awaitAll()
       val (allowed, denied) = result.partition { it is Allowed }
       assertEquals(
-                    25,
-                    allowed.size,
-                )
+          25,
+          allowed.size,
+      )
       assertEquals(
-                    25,
-                    denied.size,
-                )
+          25,
+          denied.size,
+      )
     }
   }
 
   @Test
-  fun `key near expiry still evaluates correctly, Lua scripts execute atomically`() = runBlocking {
-    // Lua scripts run atomically in Redis - TTL expiry cannot fire mid-script.
-    // This test documents that guarantee: a key with 1 second remaining still returns a valid
-    // result.
+  fun `key near expiry still evaluates correctly, Lua scripts execute atomically`(): Unit =
+      runBlocking {
+        // Lua scripts run atomically in Redis - TTL expiry cannot fire mid-script.
+        // This test documents that guarantee: a key with 1 second remaining still returns a valid
+        // result.
+        val algorithm = RedisFixedWindow(ScriptLoader(redisConnection))
+        val testKey = "near-expiry-key"
+        val policy = defaultPolicy.copy(window = 1.seconds)
+
+        val result = algorithm.calculate(testKey, policy)
+        assertInstanceOf(Allowed::class.java, result)
+
+        delay(900L) // almost expired but not quite
+
+        val secondResult = algorithm.calculate(testKey, policy)
+        assertIs<Allowed>(secondResult)
+      }
+
+  @Test
+  fun `redis NOSCRIPT errors are handled gracefully`() = runTest {
     val algorithm = RedisFixedWindow(ScriptLoader(redisConnection))
-    val testKey = "near-expiry-key"
-    val policy = defaultPolicy.copy(window = 1.seconds)
-
-    val result = algorithm.calculate(testKey, policy)
-    assertInstanceOf(Allowed::class.java, result)
-
-    delay(900L) // almost expired but not quite
-
-    val secondResult = algorithm.calculate(testKey, policy)
-    assertIs<Allowed>(secondResult)
+    val testKey = "test-key"
+    val pre = assertInstanceOf(Allowed::class.java, algorithm.calculate(testKey, defaultPolicy))
+    assertEquals(defaultPolicy.limit - 1u, pre.remaining)
+    assertTrue(pre.resetIn in 57.seconds..60.seconds, "resetIn was ${pre.resetIn}")
+    redisConnection.sync().scriptFlush()
+    val post = assertInstanceOf(Allowed::class.java, algorithm.calculate(testKey, defaultPolicy))
+    assertEquals(defaultPolicy.limit - 2u, post.remaining)
+    assertTrue(pre.resetIn in 57.seconds..60.seconds, "resetIn was ${post.resetIn}")
   }
 }

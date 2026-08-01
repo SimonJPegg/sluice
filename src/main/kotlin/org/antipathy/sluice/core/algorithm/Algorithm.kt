@@ -1,5 +1,6 @@
 package org.antipathy.sluice.core.algorithm
 
+import io.lettuce.core.RedisNoScriptException
 import io.lettuce.core.ScriptOutputType
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.future.await
@@ -8,6 +9,7 @@ import org.antipathy.sluice.core.model.Allowed
 import org.antipathy.sluice.core.model.Denied
 import org.antipathy.sluice.core.model.RateLimitResponse
 import org.antipathy.sluice.core.policy.Policy
+import org.slf4j.LoggerFactory
 
 /** One function per algorithm. Keeps counting strategies pluggable. */
 sealed interface Algorithm {
@@ -21,20 +23,37 @@ sealed interface InMemoryAlgorithm : Algorithm
 sealed class RedisAlgorithm(protected val scriptLoader: ScriptLoader) : Algorithm {
   abstract val fileLocation: String
   val sha by lazy { scriptLoader.loadScript(fileLocation) }
+  private val logger = LoggerFactory.getLogger(RedisAlgorithm::class.java)
 
   override suspend fun calculate(key: String, policy: Policy): RateLimitResponse {
     val result =
-        scriptLoader
-            .getConnection()
-            .async()
-            .evalsha<List<Long>>(
-                sha,
-                ScriptOutputType.MULTI,
-                arrayOf(key),
-                policy.limit.toString(),
-                policy.window.inWholeSeconds.toString(),
-            )
-            .await()
+        try {
+          scriptLoader
+              .getConnection()
+              .async()
+              .evalsha<List<Long>>(
+                  sha,
+                  ScriptOutputType.MULTI,
+                  arrayOf(key),
+                  policy.limit.toString(),
+                  policy.window.inWholeSeconds.toString(),
+              )
+              .await()
+        } catch (_: RedisNoScriptException) {
+          scriptLoader.loadScript(fileLocation)
+          logger.warn("NOSCRIPT for {}, re-registering", fileLocation)
+          scriptLoader
+              .getConnection()
+              .async()
+              .evalsha<List<Long>>(
+                  sha,
+                  ScriptOutputType.MULTI,
+                  arrayOf(key),
+                  policy.limit.toString(),
+                  policy.window.inWholeSeconds.toString(),
+              )
+              .await()
+        }
 
     val allowed = result[0] == 1L
     val count = result[1].toUInt()

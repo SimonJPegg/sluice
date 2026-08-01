@@ -167,13 +167,13 @@ class RedisSlidingWindowLogTest : RedisTest() {
           val result = threads.awaitAll()
           val (allowed, denied) = result.partition { it is Allowed }
           assertEquals(
-                        25,
-                        allowed.size,
-                    )
+              25,
+              allowed.size,
+          )
           assertEquals(
-                        25,
-                        denied.size,
-                    )
+              25,
+              denied.size,
+          )
         }
       }
 }

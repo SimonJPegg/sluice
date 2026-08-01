@@ -8,7 +8,7 @@ plugins {
   alias(libs.plugins.detekt)
 }
 
-application { mainClass.set("org.antipathy.sluice.api.server.ApplicationKt") }
+application { mainClass.set("org.antipathy.sluice.api.ApplicationKt") }
 
 group = "org.antipathy"
 
@@ -65,7 +65,8 @@ kotlin { jvmToolchain(21) }
 tasks.test {
   useJUnitPlatform { excludeTags("chaos") }
   jvmArgs("-Xmx2g")
-  // Testcontainers + container/client resources accumulate across classes in a shared JVM. OOMs at ~10 classes.
+  // Testcontainers + container/client resources accumulate across classes in a shared JVM. OOMs at
+  // ~10 classes.
   forkEvery = 1
 }
 
