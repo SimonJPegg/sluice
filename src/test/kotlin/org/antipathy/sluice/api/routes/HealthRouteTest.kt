@@ -8,7 +8,7 @@ import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.testing.testApplication
 import java.util.UUID
 import kotlin.test.assertTrue
-import org.antipathy.sluice.api.server.module
+import org.antipathy.sluice.api.module
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
