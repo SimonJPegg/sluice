@@ -62,7 +62,12 @@ tasks.withType<Detekt>().configureEach {
 
 kotlin { jvmToolchain(21) }
 
-tasks.test { useJUnitPlatform { excludeTags("chaos") } }
+tasks.test {
+  useJUnitPlatform { excludeTags("chaos") }
+  jvmArgs("-Xmx2g")
+  // Testcontainers + container/client resources accumulate across classes in a shared JVM. OOMs at ~10 classes.
+  forkEvery = 1
+}
 
 tasks.register<Test>("chaosTest") {
   description = "Runs chaos tests (fault injection under sustained traffic)"

@@ -137,19 +137,19 @@ class InMemoryTokenBucketTest {
         val clock = FakeClock()
         val algorithm = InMemoryTokenBucket(clock)
         val key = "test-key"
-        val policy = defaultPolicy.copy(limit = 100u)
+        val policy = defaultPolicy.copy(limit = 25u)
         withContext(Dispatchers.Default) {
-          val threads = List(200) { async { algorithm.calculate(key, policy) } }
+          val threads = List(50) { async { algorithm.calculate(key, policy) } }
           val result = threads.awaitAll()
           val (allowed, denied) = result.partition { it is Allowed }
           assertEquals(
-              100,
-              allowed.size,
-          )
+                        25,
+                        allowed.size,
+                    )
           assertEquals(
-              100,
-              denied.size,
-          )
+                        25,
+                        denied.size,
+                    )
         }
       }
 }

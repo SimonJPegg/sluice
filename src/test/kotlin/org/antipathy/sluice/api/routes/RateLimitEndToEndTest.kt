@@ -24,7 +24,6 @@ import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import java.nio.file.Paths
 import java.util.UUID
-import kotlinx.coroutines.launch
 import org.antipathy.sluice.api.metrics.PrometheusMetrics
 import org.antipathy.sluice.core.algorithm.redis.ScriptLoader
 import org.antipathy.sluice.core.algorithm.redisAlgorithm
@@ -46,7 +45,6 @@ class RateLimitEndToEndTest : RedisTest() {
             Paths.get(environment.config.property("rate-limit.policies.location").getString())
         )
     policyWatcher.load()
-    launch { policyWatcher.start() }
     val policyRegistry = YamlPolicyRegistry(policyWatcher)
     val requiredAlgorithms = policyRegistry.requiredAlgorithms()
 
@@ -97,15 +95,15 @@ class RateLimitEndToEndTest : RedisTest() {
 
   @Test
   fun `multiple requests against same key eventually returns denied`() = testApplication {
-    environment { config = ApplicationConfig("src/test/resources/api/valid/simple.yaml") }
+    environment { config = ApplicationConfig("src/test/resources/api/valid/e2e.yaml") }
     application { e2eModule() }
     val correlationID = UUID.randomUUID().toString()
 
-    repeat(100) { // As Tom jones would say
+    repeat(10) {
       client.post("/check") {
         header(HttpHeaders.XRequestId, correlationID)
         contentType(ContentType.Application.Json)
-        setBody("""{"key":"some-other-key","policyId":"api-global"}""")
+        setBody("""{"key":"some-other-key","policyId":"api-deny-fast"}""")
       }
     }
 
@@ -113,7 +111,7 @@ class RateLimitEndToEndTest : RedisTest() {
         client.post("/check") {
           header(HttpHeaders.XRequestId, correlationID)
           contentType(ContentType.Application.Json)
-          setBody("""{"key":"some-other-key","policyId":"api-global"}""")
+          setBody("""{"key":"some-other-key","policyId":"api-deny-fast"}""")
         }
     Assertions.assertEquals(HttpStatusCode.TooManyRequests, response.status)
     Assertions.assertEquals(correlationID, response.headers[HttpHeaders.XRequestId])

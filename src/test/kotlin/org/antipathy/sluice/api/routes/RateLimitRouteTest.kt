@@ -24,7 +24,6 @@ import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import java.nio.file.Paths
 import java.util.UUID
-import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.antipathy.sluice.api.metrics.PrometheusMetrics
 import org.antipathy.sluice.core.algorithm.inMemoryAlgorithm
@@ -42,7 +41,6 @@ class RateLimitRouteTest {
             Paths.get(environment.config.property("rate-limit.policies.location").getString())
         )
     policyWatcher.load()
-    launch { policyWatcher.start() }
     val policyRegistry = YamlPolicyRegistry(policyWatcher)
     val requiredAlgorithms = policyRegistry.requiredAlgorithms()
 

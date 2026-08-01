@@ -33,7 +33,6 @@ import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.antipathy.sluice.api.metrics.PrometheusMetrics
 import org.antipathy.sluice.api.routes.metrics
@@ -67,7 +66,6 @@ class ChaosTest : RedisTest() {
             Paths.get(environment.config.property("rate-limit.policies.location").getString())
         )
     policyWatcher.load()
-    launch { policyWatcher.start() }
     val policyRegistry = YamlPolicyRegistry(policyWatcher)
     val requiredAlgorithms = policyRegistry.requiredAlgorithms()
 

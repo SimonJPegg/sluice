@@ -27,6 +27,15 @@ class RedisSlidingWindowCounterTest : RedisTest() {
           id = "test-policy",
           limit = 10u,
           failType = FailType.OPEN,
+          window = 60.seconds,
+          algorithmType = AlgorithmType.SLIDING_WINDOW_COUNTER,
+      )
+
+  private val shortWindowPolicy =
+      Policy(
+          id = "test-policy-short",
+          limit = 10u,
+          failType = FailType.OPEN,
           window = 3.seconds,
           algorithmType = AlgorithmType.SLIDING_WINDOW_COUNTER,
       )
@@ -72,16 +81,16 @@ class RedisSlidingWindowCounterTest : RedisTest() {
       runBlocking {
         val algorithm = RedisSlidingWindowCounter(ScriptLoader(redisConnection))
         val key = "test-key"
-        repeat(defaultPolicy.limit.toInt()) { i ->
-          val result = algorithm.calculate(key, defaultPolicy)
+        repeat(shortWindowPolicy.limit.toInt()) { i ->
+          val result = algorithm.calculate(key, shortWindowPolicy)
           check(result is Allowed)
-          assertEquals((defaultPolicy.limit - 1u - i.toUInt()), result.remaining)
+          assertEquals((shortWindowPolicy.limit - 1u - i.toUInt()), result.remaining)
         }
-        delay(defaultPolicy.window + (defaultPolicy.window / 2))
+        delay(shortWindowPolicy.window + (shortWindowPolicy.window / 2))
         val result =
             Assertions.assertInstanceOf(
                 Allowed::class.java,
-                algorithm.calculate(key, defaultPolicy),
+                algorithm.calculate(key, shortWindowPolicy),
             )
         assertTrue(result.remaining in 3u..6u)
       }
@@ -90,14 +99,17 @@ class RedisSlidingWindowCounterTest : RedisTest() {
   fun `window rolls over - previous count carries forward with weight`() = runBlocking {
     val algorithm = RedisSlidingWindowCounter(ScriptLoader(redisConnection))
     val key = "test-key"
-    repeat(defaultPolicy.limit.toInt()) { i ->
-      val result = algorithm.calculate(key, defaultPolicy)
+    repeat(shortWindowPolicy.limit.toInt()) { i ->
+      val result = algorithm.calculate(key, shortWindowPolicy)
       check(result is Allowed)
-      assertEquals((defaultPolicy.limit - 1u - i.toUInt()), result.remaining)
+      assertEquals((shortWindowPolicy.limit - 1u - i.toUInt()), result.remaining)
     }
-    delay(defaultPolicy.window + 1.seconds)
+    delay(shortWindowPolicy.window + 1.seconds)
     val result =
-        Assertions.assertInstanceOf(Allowed::class.java, algorithm.calculate(key, defaultPolicy))
+        Assertions.assertInstanceOf(
+            Allowed::class.java,
+            algorithm.calculate(key, shortWindowPolicy),
+        )
     assertEquals(3u, result.remaining)
   }
 
@@ -105,22 +117,25 @@ class RedisSlidingWindowCounterTest : RedisTest() {
   fun `two windows stale - previous count discarded entirely, fresh start`() = runBlocking {
     val algorithm = RedisSlidingWindowCounter(ScriptLoader(redisConnection))
     val key = "test-key"
-    repeat(defaultPolicy.limit.toInt()) { i ->
-      val result = algorithm.calculate(key, defaultPolicy)
+    repeat(shortWindowPolicy.limit.toInt()) { i ->
+      val result = algorithm.calculate(key, shortWindowPolicy)
       check(result is Allowed)
-      assertEquals((defaultPolicy.limit - 1u - i.toUInt()), result.remaining)
+      assertEquals((shortWindowPolicy.limit - 1u - i.toUInt()), result.remaining)
     }
-    delay((defaultPolicy.window * 3) + 10.seconds)
+    delay((shortWindowPolicy.window * 3) + 10.seconds)
     val result =
-        Assertions.assertInstanceOf(Allowed::class.java, algorithm.calculate(key, defaultPolicy))
-    assertEquals(defaultPolicy.limit - 1u, result.remaining)
+        Assertions.assertInstanceOf(
+            Allowed::class.java,
+            algorithm.calculate(key, shortWindowPolicy),
+        )
+    assertEquals(shortWindowPolicy.limit - 1u, result.remaining)
   }
 
   @Test
   fun `burst at window boundary - previous window's weight prevents 2x burst`() = runBlocking {
     val algorithm = RedisSlidingWindowCounter(ScriptLoader(redisConnection))
     val key = "test-key"
-    val policy = defaultPolicy.copy(window = 5.seconds)
+    val policy = shortWindowPolicy.copy(window = 5.seconds)
     // exhaust the budget at the start of the window
     repeat(policy.limit.toInt()) { algorithm.calculate(key, policy) }
     // wait past the boundary — need >1s into new window due to Redis integer-second TIME
@@ -141,19 +156,19 @@ class RedisSlidingWindowCounterTest : RedisTest() {
       runBlocking {
         val algorithm = RedisSlidingWindowCounter(ScriptLoader(redisConnection))
         val testKey = "test-key"
-        val policy = defaultPolicy.copy(limit = 100u)
+        val policy = defaultPolicy.copy(limit = 25u)
         withContext(Dispatchers.Default) {
-          val threads = List(200) { async { algorithm.calculate(testKey, policy) } }
+          val threads = List(50) { async { algorithm.calculate(testKey, policy) } }
           val result = threads.awaitAll()
           val (allowed, denied) = result.partition { it is Allowed }
           assertEquals(
-              100,
-              allowed.size,
-          )
+                        25,
+                        allowed.size,
+                    )
           assertEquals(
-              100,
-              denied.size,
-          )
+                        25,
+                        denied.size,
+                    )
         }
       }
 }

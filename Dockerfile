@@ -1,9 +1,9 @@
-FROM docker.cloudsmith.io/antipathy-org/sluice/gradle:jdk21-corretto-al2023 AS build
+FROM gradle:jdk21-corretto-al2023 AS build
 COPY . /build/
 WORKDIR /build
 RUN ./gradlew buildFatJar
 
-FROM docker.cloudsmith.io/antipathy-org/sluice/eclipse-temurin:21.0.7_6-jre-alpine
+FROM eclipse-temurin:21.0.7_6-jre-alpine
 RUN addgroup -S sluice && adduser -S sluice -G sluice
 WORKDIR /app
 COPY --from=build /build/build/libs/sluice-all.jar /app/sluice.jar

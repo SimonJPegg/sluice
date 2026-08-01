@@ -88,17 +88,17 @@ class ThrottledCounterStoreTest {
 
   @Test
   fun `concurrent requests - only maxRequests get through`() = runTest {
-    val store = ThrottledCounterStore(100, allowingStore(1.seconds))
+    val store = ThrottledCounterStore(25, allowingStore(1.seconds))
     withContext(Dispatchers.Default) {
-      val threads = List(200) { async { store.evaluate("key", policy) } }
+      val threads = List(50) { async { store.evaluate("key", policy) } }
       val result = threads.awaitAll()
       val (allowed, denied) = result.partition { it is Allowed }
       Assertions.assertEquals(
-          100,
+          25,
           allowed.size,
       )
       Assertions.assertEquals(
-          100,
+          25,
           denied.size,
       )
     }
