@@ -58,6 +58,8 @@ Returns:
 
 Health: `/health/live`, `/health/ready`, `/health/status`
 
+Full spec: [`docs/openapi.yaml`](docs/openapi.yaml)
+
 ## Metrics
 
 Prometheus metrics on `/metrics` — outcomes, latency, errors, store health

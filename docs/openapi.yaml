@@ -1,0 +1,280 @@
+openapi: 3.1.0
+info:
+  title: Sluice
+  description: |
+    A standalone rate limiting service.
+
+    ## Retry Guidance
+
+    When you receive a `429` or `503` with a `Retry-After` header, wait at least that many seconds
+    before retrying. Don't jitter on top — the value is already the earliest you'll be allowed through.
+
+    If `Retry-After` is absent on a `503`, back off exponentially starting at 1 second.
+    The service is degraded and hammering it won't help.
+
+    A `200` with `X-RateLimit-Remaining: 0` means you got the last one. Next request will be denied.
+    Use it as a signal to back off voluntarily.
+
+    ## Error Contract
+
+    All error responses return `{"error": "..."}` with a human-readable message.
+
+    Denied responses return `{"retryAfter": "PT..."}` as an ISO 8601 duration.
+
+    Failed responses (503) return `{"reason": "...", "failureCategory": "...", "retryAfter": "PT..."}`.
+    `failureCategory` is machine-readable and stable. `reason` is human-readable and may change between versions.
+
+    **Stability guarantees:**
+    - Response shapes are stable. New fields may be added. Existing fields won't be removed or change type.
+    - HTTP status codes for each outcome are fixed.
+    - Header names and semantics are fixed.
+    - `failureCategory` enum values are additive only.
+  version: 0.2.0
+  license:
+    name: MIT
+    url: https://github.com/simonJPegg/sluice/blob/main/LICENSE
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+paths:
+  /check:
+    post:
+      summary: Check rate limit
+      description: |
+        Evaluates a rate limit decision for the given key and policy.
+        Returns allow/deny with enough context for the caller to act on.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RateLimitRequest'
+            example:
+              key: "user-123"
+              policyId: "fixed-window-example"
+      responses:
+        '200':
+          description: Allowed
+          headers:
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Maximum requests permitted in the window
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: Requests remaining in the current window
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Seconds until the window resets
+            X-Request-Id:
+              schema:
+                type: string
+              description: Correlation ID (echoed from request or generated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllowedResponse'
+              example:
+                remaining: 99
+                limit: 100
+                resetIn: "PT1M"
+        '429':
+          description: Denied — rate limit exceeded
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds until the caller should retry
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeniedResponse'
+              example:
+                retryAfter: "PT1M"
+        '400':
+          description: Bad input — missing or invalid key/policyId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "No Key was provided"
+        '404':
+          description: Unknown policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Policy api-nonexistent does not exist"
+        '503':
+          description: Service unavailable — store failure with fail-closed policy
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FailedResponse'
+              example:
+                reason: "circuit breaker activated"
+                failureCategory: "CIRCUIT_OPEN"
+                retryAfter: "PT1M"
+      security:
+        - bearerAuth: []
+
+  /health/live:
+    get:
+      summary: Liveness probe
+      description: Always returns 200. Used by Kubernetes liveness probes.
+      responses:
+        '200':
+          description: Alive
+
+  /health/ready:
+    get:
+      summary: Readiness probe
+      description: Returns 200 when the service is ready to accept traffic.
+      responses:
+        '200':
+          description: Ready
+
+  /health/status:
+    get:
+      summary: Detailed status
+      description: Returns policy and store health information.
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+              example:
+                policies:
+                  count: 4
+                  loaded: "2026-08-01T12:00:00Z"
+                storeStatus:
+                  type: "redis"
+                  status: "connected"
+                  latencyMS: 1
+        '503':
+          description: Store unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      description: Prometheus-formatted metrics scrape endpoint.
+      responses:
+        '200':
+          description: Metrics in Prometheus text format
+          content:
+            text/plain:
+              schema:
+                type: string
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key passed as Bearer token. Only required when auth is enabled.
+
+  schemas:
+    RateLimitRequest:
+      type: object
+      required:
+        - key
+        - policyId
+      properties:
+        key:
+          type: string
+          description: Identifier to rate limit (user ID, IP, API key, etc.)
+          example: "user-123"
+        policyId:
+          type: string
+          description: Policy to evaluate against (must exist in loaded config)
+          example: "fixed-window-example"
+
+    AllowedResponse:
+      type: object
+      properties:
+        remaining:
+          type: integer
+          description: Requests remaining in the current window
+        limit:
+          type: integer
+          description: Maximum requests permitted
+        resetIn:
+          type: string
+          description: ISO 8601 duration until window resets
+
+    DeniedResponse:
+      type: object
+      properties:
+        retryAfter:
+          type: string
+          description: ISO 8601 duration until the caller should retry
+
+    FailedResponse:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: Human-readable failure reason
+        failureCategory:
+          type: string
+          enum:
+            - OVERLOADED
+            - CIRCUIT_OPEN
+            - STORE_UNAVAILABLE
+            - STORE_TIMEOUT
+            - SEE_REASON
+          description: Machine-readable failure category
+        retryAfter:
+          type: string
+          nullable: true
+          description: ISO 8601 duration (present when a retry makes sense)
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+
+    StatusResponse:
+      type: object
+      properties:
+        policies:
+          type: object
+          properties:
+            count:
+              type: integer
+            loaded:
+              type: string
+              description: ISO 8601 timestamp when policies were loaded
+        storeStatus:
+          type: object
+          properties:
+            type:
+              type: string
+              description: Backend type (redis or in memory)
+            status:
+              type: string
+              description: Connection status
+            latencyMS:
+              type: integer
+              description: Last ping latency in milliseconds

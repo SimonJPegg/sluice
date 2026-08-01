@@ -129,7 +129,7 @@ We didn't catch socket exceptions and were returning 500 errors to clients
 ## Gaps Identified
 - ~~Circuit breaker leaks internal state (open/half-open cycling) into the API — caller sees 503→429→503 instead of a consistent answer per policy fail stance~~
 - ~~Socket exceptions from Redis connection refused were not caught — returning raw 500s to clients~~
-- `sluice_request_outcomes_total` needs a `result="failed_open"` & a `result="failed_closed"` label
+- ~~`sluice_request_outcomes_total` needs a `result="failed_open"` & a `result="failed_closed"` label~~
+- ~~Connection timeout has been missed as a user configurable property~~
 - Lettuce client does not reconnect after Redis restart — requires Sluice pod restart to recover
-- Connection timeout has been missed as a user configurable property
 - Burst test needs higher target rate (1000+ req/s) to find the actual breaking point
