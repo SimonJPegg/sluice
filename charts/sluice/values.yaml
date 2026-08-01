@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   # -- Container image repository
-  repository: docker.cloudsmith.io/antipathy-org/sluice/sluice
+  repository: ghcr.io/simonjpegg/sluice
   # -- Image pull policy
   pullPolicy: IfNotPresent
   # -- Overrides the image tag (defaults to appVersion)

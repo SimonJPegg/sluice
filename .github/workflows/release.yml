@@ -3,14 +3,14 @@ on:
   push:
     tags: [ '*.*.*' ]
 env:
-  CLOUDSMITH_REGISTRY: docker.cloudsmith.io
-  CLOUDSMITH_OWNER: antipathy-org
-  CLOUDSMITH_REPO: sluice
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      packages: write
     steps:
       - uses: actions/checkout@v7
       - name: Set up JDK 21
@@ -27,23 +27,23 @@ jobs:
         uses: docker/setup-qemu-action@v4
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
-      - name: Log into Cloudsmith Docker registry
+      - name: Log into GHCR
         uses: docker/login-action@v4
         with:
-          registry: ${{ env.CLOUDSMITH_REGISTRY }}
-          username: ${{ secrets.CLOUDSMITH_USERNAME }}
-          password: ${{ secrets.CLOUDSMITH_API_KEY }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.CLOUDSMITH_REGISTRY }}/${{ env.CLOUDSMITH_OWNER }}/${{ env.CLOUDSMITH_REPO }}/sluice
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
         with:
           context: .
           push: true
-          tags: ${{ env.CLOUDSMITH_REGISTRY }}/${{ env.CLOUDSMITH_OWNER }}/${{ env.CLOUDSMITH_REPO }}/sluice:${{ github.ref_name }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
           provenance: mode=max
@@ -52,11 +52,9 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Release
         uses: softprops/action-gh-release@v3
-      - name: Install Cloudsmith CLI
-        run: pip install cloudsmith-cli
+      - name: Log into GHCR for Helm
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username ${{ github.actor }} --password-stdin
       - name: Package Helm chart
         run: helm package charts/sluice --version ${{ github.ref_name }} --app-version ${{ github.ref_name }}
-      - name: Push Helm chart to Cloudsmith
-        env:
-          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
-        run: cloudsmith push helm ${{ env.CLOUDSMITH_OWNER }}/${{ env.CLOUDSMITH_REPO }} sluice-${{ github.ref_name }}.tgz
+      - name: Push Helm chart to GHCR
+        run: helm push sluice-${{ github.ref_name }}.tgz oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/charts
