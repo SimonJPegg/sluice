@@ -7,14 +7,14 @@ module.exports.options = {
       executor: 'ramping-arrival-rate',
       startRate: 100,
       timeUnit: '1s',
-      preAllocatedVUs: 50,
-      maxVUs: 200,
+      preAllocatedVUs: 200,
+      maxVUs: 1000,
       stages: [
-        { duration: '1m', target: 500 },   // baseline at 100 req/s
-        { duration: '10s', target: 1000 },   // spike to 500 req/s
-        { duration: '30s', target: 1000 },   // hold the burst
-        { duration: '10s', target: 500 },   // drop back
-        { duration: '1m', target: 100 },    // recovery
+        { duration: '30s', target: 5000 },   // warm up
+        { duration: '10s', target: 20000 },  // spike
+        { duration: '30s', target: 20000 },  // hold
+        { duration: '10s', target: 5000 },   // drop back
+        { duration: '30s', target: 1000 },   // recovery
       ],
     },
   },

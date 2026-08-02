@@ -8,7 +8,9 @@
 | Redis | Single instance, 256Mi request / 512Mi limit, redis:8-alpine, no persistence |
 | Network | Via Traefik ingress, TLS terminated at ingress |
 | JVM | 21, default GC |
-| k6 | v2.1.0, containerised |
+| k6 | v2.1.0, containerised, separate machine (32GB RAM, NVMe) |
+
+All results are single runs, not averaged across multiple executions. k6 runs on a separate host from the cluster — load generator is not competing with the service for resources.
 
 ## Scenarios
 
@@ -74,29 +76,35 @@ Policy limit set high so all requests execute the full Redis Lua script.
 
 #### fixed-window-example
 
-##### Allow Path
-
-Policy limit set high so all requests execute the full Redis Lua script.
-
-| Rate | Med | P95 | Max | Denied % |
-|------|-----|-----|-----|----------|
-| 476 req/s | 3.97ms | 4.97ms | 80.85ms | 0% |
+Ramps from baseline to target rate, holds, drops back. Looking for the point where latency degrades or errors appear.
 
 ##### Denial Path
 
-Policy: `fixed-window-example` (100 req/min). Majority denied after first window fills.
+Policy: `fixed-window-example` (100 req/min). Almost everything denied.
 
-| Rate | Med | P95 | Max | Denied % |
-|------|-----|-----|-----|----------|
-| 476 req/s | 3.97ms | 4.99ms | 74.97ms | 99.62% |
+| Target | Achieved | Med | P95 | Max | Errors |
+|--------|----------|-----|-----|-----|--------|
+| 10000 req/s | 5594 req/s | 5.02ms | 5.5ms | 123ms | 0% |
+| 20000 req/s | 2984 req/s | 8.25ms | 1.15s | 11.07s | 6.7% |
+
+##### Allow Path
+
+Policy limit set to 10,000,000 so every request runs the full Redis Lua script.
+
+| Target | Achieved | Med | P95 | Max | Errors |
+|--------|----------|-----|-----|-----|--------|
+| 10000 req/s | 5589 req/s | 5.03ms | 6.0ms | 220ms | 0% |
 
 ##### Observations
 
-- Max concurrency peaked at 5-6 VUs out of 50+ available — service isn't under pressure at this rate
-- Denial path slightly faster than allow (consistent with sustained results)
-- Max latency (80ms allow, 74ms deny) exceeds the 50ms coroutine timeout — some requests likely hitting fail-open
-- 8-9 dropped iterations — k6 couldn't schedule fast enough, not service-side
-- Need to push harder to find the cliff. Current burst script doesn't saturate anything.
+- All tests ran with `maxConcurrentRequests` disabled (no load shedding). See "Burst with load shedding" below for behaviour under saturation with shedding enabled.
+- Ceiling is ~5500 req/s on this hardware. Both allow and deny paths perform identically.
+- Lua script execution is not a factor. Deny doesn't short-circuit faster than allow at scale.
+- At 20000 target, CPU saturates on the node. Requests queue, latency goes mental, 6.7% get errors (503 from load shedding or timeouts).
+- The service doesn't degrade gracefully between 5500 and saturation — it falls off a cliff. One moment P95 is 5ms, next it's over a second.
+- Max VUs at 10000 target: 415 (deny), 247 (allow). Service completes requests fast enough that k6 doesn't need many.
+- At 20000 target: all 1000 VUs saturated, 688k iterations dropped. k6 couldn't send them because every VU was blocked waiting.
+- Bottleneck: node CPU, not Redis, not Sluice application layer, not network.
 
 ##### How to Reproduce
 
@@ -114,17 +122,40 @@ Policy: `fixed-window-example` (100 req/min). Majority denied after first window
 
   Script: [`burst.ts`](../loadtest/burst.ts)
 
-  #policy
+  policy
 
   ```yaml
     policies:
       - id: fixed-window-example
-        limit: 100000 # open
+        limit: 10000000 # open
         # limit: 100 # deny
         window: "PT1M"
         algorithmType: fixed_window
         failType: open
   ```
+
+---
+
+### Burst with load shedding (ramping-arrival-rate executor)
+
+Same 20000 req/s target as above. `maxConcurrentRequests` enabled to see whether shedding helps under saturation.
+
+#### Denial Path
+
+| Shedding Limit | Achieved | Med | P95 | Max | Check Failures |
+|----------------|----------|-----|-----|-----|----------------|
+| off | 2984 req/s | 8.25ms | 1.15s | 11.07s | 6.7% |
+| 1000 | 3339 req/s | 10.23ms | 1.03s | 9.56s | 6.2% |
+| 100 | 3841 req/s | 15.8ms | 932ms | 9.92s | 37.9% |
+
+##### Observations
+
+- Shedding improves throughput. At limit 100, achieved 3841 req/s vs 2984 without — requests get rejected fast instead of queuing for seconds.
+- But it doesn't fix CPU exhaustion. P95 still nearly a second because the node itself is maxed. Even the rejection path costs cycles.
+- At limit 1000, shedding barely fires. Normal in-flight at 5ms/req is ~28. By the time you hit 1000 concurrent, the server is already drowning.
+- At limit 100, 37.9% of requests shed. That's correct behaviour — the service is protecting itself. Callers get a fast 503 with `Retry-After` instead of waiting 11 seconds.
+- Load shedding protects Redis (fewer requests make it through), but can't protect against node-level resource exhaustion.
+- Horizontal scaling is the answer beyond ~5500 req/s on this hardware.
 
 ---
 
@@ -138,7 +169,7 @@ gradle chaosTest
 
 ### Redis unreachable
 
-CircutBreaker is broken. A caller shouldn't see 503 then 429 then 503 again because the circuit breaker is cycling
+Circuit breaker is broken. A caller shouldn't see 503 then 429 then 503 again because the circuit breaker is cycling
 through open/half-open internally. That's implementation detail leaking into the API. Redis is down, policy says
 fail-closed, give them one answer until it comes back.
 
@@ -153,4 +184,4 @@ We didn't catch socket exceptions and were returning 500 errors to clients
 - ~~`sluice_request_outcomes_total` needs a `result="failed_open"` & a `result="failed_closed"` label~~
 - ~~Connection timeout has been missed as a user configurable property~~
 - ~~Lettuce client does not reconnect after Redis restart — requires Sluice pod restart to recover~~
-- Burst test needs higher target rate (1000+ req/s) to find the actual breaking point
+- ~~Burst test needs higher target rate (1000+ req/s) to find the actual breaking point~~

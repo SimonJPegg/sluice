@@ -75,22 +75,15 @@ Request rate, denial %, Redis latency, per-policy breakdowns, and validation err
 
 Kotlin 2.x, Ktor, Lettuce, Micrometer. JVM 21. Gradle.
 
-## Roadmap
+## Releases
 
-### v0.1.0
-
--~~Backpressure / load shedding under degraded Redis~~
-
-### v0.2.0 — (current)
-
-- ~~Authentication on `/check`~~
-
-### v1.0.0 — Confidence
-
-- ~~Load testing with k6 (published baselines)~~
-- ~~Chaos testing (Redis failure, network partitions, latency injection)~~
-- ~~Policy reload without pod restart~~
-- Resolve gaps from performance tests
+- **1.0.0** — Load testing baselines, chaos testing, policy hot-reload, performance gaps resolved
+- **0.2.0** — Bearer token authentication on `/check`
+- **0.1.0** — Backpressure and load shedding under degraded Redis
+- **0.0.4** — Kubernetes ingress, security contexts, Grafana dashboard, dependency updates
+- **0.0.3** — Release pipeline fixes
+- **0.0.2** — Release pipeline fixes
+- **0.0.1** — Everything else. Four algorithms, Redis + in-memory stores, circuit breaker, Helm chart, CI pipeline
 
 ## Why
 
