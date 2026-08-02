@@ -20,13 +20,15 @@ abstract class RedisTest {
   lateinit var redisClient: RedisClient
   lateinit var redisConnection: StatefulRedisConnection<String, String>
 
+  // not an oxymoron apparently, who knew?
+  open val commandTimeout: Duration = Duration.ofMillis(200)
+
   @BeforeEach
   fun before() {
     redisClient = RedisClient.create("redis://${toxiproxy.host}:${toxiproxy.getMappedPort(8666)}")
-    // testing timeouts is about as much fun as it looks
     redisClient.options =
         ClientOptions.builder()
-            .timeoutOptions(TimeoutOptions.enabled(Duration.ofMillis(50)))
+            .timeoutOptions(TimeoutOptions.enabled(commandTimeout))
             .autoReconnect(true)
             .build()
     redisConnection = redisClient.connect()
