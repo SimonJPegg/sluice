@@ -1,3 +1,5 @@
+![Version](https://img.shields.io/github/v/tag/simonJPegg/sluice)
+
 # Sluice Helm Chart
 
 Deploys sluice and a single-node Redis to Kubernetes. That's it.
@@ -15,7 +17,7 @@ Deploys sluice and a single-node Redis to Kubernetes. That's it.
 From GHCR (OCI):
 
 ```bash
-helm install sluice oci://ghcr.io/simonjpegg/charts/sluice --version 0.2.0
+helm install sluice oci://ghcr.io/simonjpegg/charts/sluice --version <version>
 ```
 
 From source:
@@ -27,8 +29,8 @@ helm install sluice ./charts/sluice
 With overrides:
 
 ```bash
-helm install sluice oci://ghcr.io/simonjpegg/charts/sluice --version 0.2.0 \
-  --set image.tag=0.2.0
+helm install sluice oci://ghcr.io/simonjpegg/charts/sluice --version <version> \
+  --set image.tag=<version>
 ```
 
 ## Test

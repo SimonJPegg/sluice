@@ -31,5 +31,9 @@ jobs:
           name: Tests
           path: build/test-results/test/*.xml
           reporter: java-junit
+      - name: Helm lint
+        run: helm lint charts/sluice
+      - name: Helm template
+        run: helm template sluice charts/sluice
       - name: Docker build
         run: docker build . --tag sluice:$(date +%s)
