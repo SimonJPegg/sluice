@@ -3,7 +3,7 @@ COPY . /build/
 WORKDIR /build
 RUN ./gradlew buildFatJar
 
-FROM eclipse-temurin:21.0.7_6-jre-alpine
+FROM eclipse-temurin:24.0.2_12-jre-alpine
 RUN addgroup -g 1000 -S sluice && adduser -u 1000 -S sluice -G sluice
 WORKDIR /app
 COPY --from=build /build/build/libs/sluice-all.jar /app/sluice.jar
