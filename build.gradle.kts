@@ -31,7 +31,7 @@ dependencies {
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.micrometer.registry.prometheus)
   implementation(libs.logback.classic)
-  implementation("io.ktor:ktor-server-default-headers:3.5.1")
+  implementation("io.ktor:ktor-server-default-headers:3.6.0")
 
   /* Test */
   testImplementation(kotlin("test"))
